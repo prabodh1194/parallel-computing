@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <string.h>
+#include <pthread.h>
 
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
@@ -112,8 +113,3 @@ void printContent(char **buff, int size)
         buff++;
     }
 }
-
-void compare2(char **buff1, char **buff2, int size1, int size2)
-{
-    int i,j;
-
