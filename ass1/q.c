@@ -10,10 +10,11 @@ void createQueue(struct queue *q)
     q->rear = NULL;
 }
 
-void enqueue(struct queue *q, char *d)
+void enqueue(struct queue *q, char *d, unsigned char d_t)
 {
     struct node *node = (struct node*)malloc(sizeof(struct node));
     strcpy(node->x,d);
+    node->d_type = d_t;
     node->next = NULL;
 
     if(q->front==NULL)
@@ -31,6 +32,7 @@ void enqueue(struct queue *q, char *d)
 void dequeue(struct queue *q, char *a)
 {
     struct node *temp;
+    if(a!=NULL)
     strcpy(a , q->front->x);
     temp = q->front;
     q->front = q->front->next;
