@@ -11,10 +11,10 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include "q.h"
 
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
-#define FILE_PATH_SIZE 4096 //number of permissible characters in file name in linux
 
 void *getFiles(void *);
 int compareFiles(char *file1, char *file2);
@@ -28,6 +28,8 @@ pthread_t t1, t2;
 int mismatch=0, match=0;
 
 char *path_dir, *path_file;
+
+struct queue q1,q2,q3;
 
 int main(int argc, char * const *argv)
 {
@@ -61,6 +63,10 @@ int main(int argc, char * const *argv)
             default:
                 abort();
         }
+
+    createQueue(&q1);
+    createQueue(&q2);
+    createQueue(&q3);
 
     pthread_create(&t1, NULL, getFiles, (void*)dir1);
     pthread_create(&t2, NULL, getFiles, (void*)dir2);
