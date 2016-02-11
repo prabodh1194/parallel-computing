@@ -10,19 +10,30 @@
 #include <dirent.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
 #define FILE_PATH_SIZE 4096 //number of permissible characters in file name in linux
 
-void getFiles(char *path, char ***buff, int *offset);
-void printContent(char **buff, int size);
-void compare2(char **buff1, char **buff2, int size1, int size2);
+void *getFiles(void *);
+int compareFiles(char *file1, char *file2);
+
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_fill = PTHREAD_COND_INITIALIZER;
+pthread_t t1, t2;
+
+int mismatch=0, match=0;
+
+char *path_dir, *path_file;
 
 int main(int argc, char * const *argv)
 {
-    char *dir1, *dir2, ***buff;
-    int j,i,fileno = FILE_NUMBER, c, size1, size2;
+    char *dir1, *dir2;
+    int fileno = FILE_NUMBER, c;
+
 
     dir1 = argv[1];
     dir2 = argv[2];
@@ -51,34 +62,27 @@ int main(int argc, char * const *argv)
                 abort();
         }
 
-    buff = (char ***)malloc(2*sizeof(char **));
+    pthread_create(&t1, NULL, getFiles, (void*)dir1);
+    pthread_create(&t2, NULL, getFiles, (void*)dir2);
 
-    for (i = 0; i < 2; i++) 
-    {
-        buff[i] = (char **)malloc(sizeof(char *)*fileno);
-
-        for(j = 0; j < fileno; j++)
-            buff[i][j] = (char *)malloc(sizeof(char)*FILE_PATH_SIZE);
-    }
-
-    printf("\n\nFiles in %s\n",dir1);
-    getFiles(dir1, buff, &size1);
-    printContent(*buff, size1);
-
-    printf("\n\nFiles in %s\n",dir2);
-    getFiles(dir2, buff+1, &size2);
-    printContent(buff[1], size2);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    printf("%d %d\n",match,mismatch);
 
     //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
     return 0;
 }
 
 /* Used http://www.thegeekstuff.com/2012/06/c-directory/ to write this function*/
-void getFiles(char *path, char ***buff, int *offset)
+void *getFiles(void *ptr)
 {
-    char name[FILE_PATH_SIZE];
+    char *path, fs_path[FILE_NAME_SIZE], name[FILE_PATH_SIZE];
+    path = (char *)ptr;
     DIR *dp = NULL;
-    struct dirent *dptr = NULL;
+    struct dirent *dptr;
+    int f;
+
+    path_file = NULL;
 
     if(NULL == (dp = opendir(path)))
     {
@@ -87,29 +91,65 @@ void getFiles(char *path, char ***buff, int *offset)
     }
     else
     {
-        while(NULL != (dptr = readdir(dp)))
+        name[0]='/';
+        while(1)
         {
-            if(path[strlen(path)-1]!='/')
-                sprintf(name,"%s/%s",path,dptr->d_name);
+            if(NULL == (dptr = readdir(dp)))
+            {
+                free( path_file) ;
+                pthread_mutex_lock(&cond_mutex);
+                pthread_cond_signal(&cond_empty);
+                pthread_mutex_unlock(&cond_mutex);
+            }
+            if(dptr->d_type == DT_DIR)
+                sprintf(fs_path,"%s%s/",name,dptr->d_name);
+            else if(dptr->d_type != DT_UNKNOWN)
+                sprintf(fs_path,"%s%s",path,dptr->d_name);
+
+            pthread_mutex_lock(&cond_mutex);
+            if(pthread_equal(t1,pthread_self()))
+            {
+                path_file = (char *)malloc(sizeof(char)*FILE_PATH_SIZE);
+                strcpy(path_file,fs_path);
+                pthread_cond_signal(&cond_fill);
+                while(path_file!=NULL)
+                    pthread_cond_wait(&cond_empty, &cond_mutex);
+            }
             else
-                sprintf(name,"%s%s",path,dptr->d_name);
-
-            //printf("%s\n",name);
-
-            if(dptr->d_type == DT_DIR && strcmp(dptr->d_name,".")!=0 && strcmp(dptr->d_name,"..")!=0)
-                getFiles(name, buff, offset);
-            else if(strcmp(dptr->d_name,".")!=0 && strcmp(dptr->d_name,"..")!=0)
-                strcpy(*(*buff+(*offset)++),name);
+            {
+                while(path_file==NULL)
+                    pthread_cond_wait(&cond_fill, &cond_mutex);
+                if(strcmp(path_file,fs_path)==0)
+                {
+                    if(dptr->d_type != DT_DIR && dptr->d_type != DT_UNKNOWN)
+                    {
+                        f = compareFiles(path_file, fs_path);
+                        if(f==-1)
+                            mismatch+=1;
+                        else
+                            match+=1;
+                    }
+                    if(dptr->d_type == DT_DIR)
+                    {
+                        match+=1;
+                    }
+                }
+                mismatch+=1;
+            }
+            pthread_mutex_unlock(&cond_mutex);
         }
     }
 }
 
-void printContent(char **buff, int size)
+int compareFiles(char *file1, char *file2)
 {
-    int i;
-    for(i=0;i<size;i++)
-    {
-        printf("%s\n",*buff);
-        buff++;
-    }
+    struct stat buf1, buf2;
+
+    //compare file size
+    stat(file1, &buf1);
+    stat(file2, &buf2);
+
+    if(buf1.st_size != buf2.st_size)
+        return -1;
+    return 1;
 }
