@@ -80,34 +80,48 @@ int main(int argc, char * const *argv)
     pthread_create(&t1, NULL, getFiles, (void*)dir1);
     pthread_create(&t2, NULL, getFiles, (void*)dir2);
 
+    while(!isEmpty(&q3) && !isEmpty(&q4))
+    {
+        pthread_mutex_lock(&cond_mutex);
+        while(isEmpty(&q1) || isEmpty(&q2))
+            pthread_cond_wait(&cond_fill, &cond_mutex);
+        pthread_mutex_unlock(&cond_mutex);
+
+
+        /*
+        printf("q1\n");
+        print(q1);
+        printf("\nq2\n");
+        print(q2);
+        printf("\nq3\n");
+        print(q3);
+        */
+
+        compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
+
+        /*
+        printf("After modds\n");
+        printf("q1\n");
+        print(q1);
+        printf("\nq2\n");
+        print(q2);
+        printf("\nq3\n");
+        print(q3);
+        printf("\nq4\n");
+        print(q4);
+        */
+
+        pthread_mutex_lock(&cond_mutex);
+        pthread_cond_broadcast(&cond_empty);
+        pthread_mutex_unlock(&cond_mutex);
+    }
+
+    //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
 
-    printf("q1\n");
-    print(q1);
+    printf("\n\nTotal Matches: %d\nTotal mismatches: %d\n",match,mismatch);
 
-    printf("\nq2\n");
-    print(q2);
-
-    printf("\nq3\n");
-    print(q3);
-
-    compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
-
-    printf("After modds\n");
-
-    printf("q1\n");
-    print(q1);
-
-    printf("\nq2\n");
-    print(q2);
-
-    printf("\nq3\n");
-    print(q3);
-
-    printf("\nq4\n");
-    print(q4);
-    //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
     return 0;
 }
 
@@ -152,10 +166,19 @@ void *getFiles(void *ptr)
                 if(strcmp(dit->d_name,"..")!=0 && strcmp(dit->d_name,".")!=0)
                 {
                     sprintf(temp,"%s%s",root,dit->d_name);
+                    if(dit->d_type == DT_DIR)
+                        strcat(temp,"/");
                     enqueue(tq,temp,dit->d_type);
                 }
             }
+            pthread_mutex_lock(&cond_mutex);
+            pthread_cond_signal(&cond_fill);
+            pthread_mutex_unlock(&cond_mutex);
         }
+        pthread_mutex_lock(&cond_mutex);
+        while(!isEmpty(tq))
+            pthread_cond_wait(&cond_empty, &cond_mutex);
+        pthread_mutex_unlock(&cond_mutex);
     }
     pthread_exit(0);
 }
@@ -189,7 +212,12 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
                     sprintf(file1,"%s%s",root1,h1->x);
                     sprintf(file2,"%s%s",root2,h2->x);
                     if(compareFiles(file1,file2)!=1)
+                    {
                         printf("Files %s & %s are different in content\n",file1,file2);
+                        mismatch+=1;
+                    }
+                    else
+                        match+=1;
                 }
                 if(t2!=NULL)
                 {
@@ -213,7 +241,18 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
                 f=0;
         }
         if(f2==0)
-            printf("Path is new fs 1: %s\n",h1->x);
+        {
+            if(h1->x[strlen(h1->x)-1]=='/')
+            {
+                printf("Directory is new fs 1: %s\n",h1->x);
+                mismatch+=1;
+            }
+            else
+            {
+                printf("File is new fs 1: %s\n",h1->x);
+                mismatch+=1;
+            }
+        }
         else
             f2=0;
         t1 = h1;
@@ -223,7 +262,16 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
     h2 = q2->front;
     while(h2!=NULL)
     {
-        printf("Path is new fs 2: %s\n",h2->x);
+        if(h2->x[strlen(h2->x)-1]=='/')
+        {
+            printf("Directory is new fs 2: %s\n",h2->x);
+            mismatch+=1;
+        }
+        else
+        {
+            printf("File is new fs 2: %s\n",h2->x);
+            mismatch+=1;
+        }
         h2=h2->next;
         dequeue(q2,NULL);
     }
