@@ -11,10 +11,10 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include "q.h"
 
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
-#define FILE_PATH_SIZE 4096 //number of permissible characters in file name in linux
 
 void *getFiles(void *);
 int compareFiles(char *file1, char *file2);
@@ -28,6 +28,8 @@ pthread_t t1, t2;
 int mismatch=0, match=0;
 
 char *path_dir, *path_file;
+
+struct queue q1,q2,q3;
 
 int main(int argc, char * const *argv)
 {
@@ -62,6 +64,12 @@ int main(int argc, char * const *argv)
                 abort();
         }
 
+    createQueue(&q1);
+    createQueue(&q2);
+    createQueue(&q3);
+
+    enqueue(&q3,"/");
+
     pthread_create(&t1, NULL, getFiles, (void*)dir1);
     pthread_create(&t2, NULL, getFiles, (void*)dir2);
 
@@ -76,66 +84,15 @@ int main(int argc, char * const *argv)
 /* Used http://www.thegeekstuff.com/2012/06/c-directory/ to write this function*/
 void *getFiles(void *ptr)
 {
-    char *path, fs_path[FILE_NAME_SIZE], name[FILE_PATH_SIZE];
-    path = (char *)ptr;
-    DIR *dp = NULL;
-    struct dirent *dptr;
-    int f;
-
-    path_file = NULL;
-
-    if(NULL == (dp = opendir(path)))
+    char path[FILE_PATH_SIZE];
+    while(!isEmpty(&q3))
     {
-        fprintf(stderr,"Cannot directory ar given path [%s]\n",path);
-        exit(-1);
-    }
-    else
-    {
-        name[0]='/';
-        while(1)
+        dequeue(&q3,path);
+        if(pthread_equal(t1,pthread_self())==0)
         {
-            if(NULL == (dptr = readdir(dp)))
-            {
-                free( path_file) ;
-                pthread_mutex_lock(&cond_mutex);
-                pthread_cond_signal(&cond_empty);
-                pthread_mutex_unlock(&cond_mutex);
-            }
-            if(dptr->d_type == DT_DIR)
-                sprintf(fs_path,"%s%s/",name,dptr->d_name);
-            else if(dptr->d_type != DT_UNKNOWN)
-                sprintf(fs_path,"%s%s",path,dptr->d_name);
-
             pthread_mutex_lock(&cond_mutex);
-            if(pthread_equal(t1,pthread_self()))
-            {
-                path_file = (char *)malloc(sizeof(char)*FILE_PATH_SIZE);
-                strcpy(path_file,fs_path);
-                pthread_cond_signal(&cond_fill);
-                while(path_file!=NULL)
-                    pthread_cond_wait(&cond_empty, &cond_mutex);
-            }
-            else
-            {
-                while(path_file==NULL)
-                    pthread_cond_wait(&cond_fill, &cond_mutex);
-                if(strcmp(path_file,fs_path)==0)
-                {
-                    if(dptr->d_type != DT_DIR && dptr->d_type != DT_UNKNOWN)
-                    {
-                        f = compareFiles(path_file, fs_path);
-                        if(f==-1)
-                            mismatch+=1;
-                        else
-                            match+=1;
-                    }
-                    if(dptr->d_type == DT_DIR)
-                    {
-                        match+=1;
-                    }
-                }
-                mismatch+=1;
-            }
+            while(!isEmpty(&q1))
+                pthread_cond_wait(&cond_empty, &cond_mutex);
             pthread_mutex_unlock(&cond_mutex);
         }
     }
