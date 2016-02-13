@@ -16,31 +16,36 @@
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
 
+struct arg {
+    char *path;
+    int i;
+};
+
 void *getFiles(void *);
 void compareQ(struct queue *, struct queue *, struct queue *, struct queue *,char *, char *);
 int compareFiles(char *file1, char *file2);
 
-pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t count_mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t cond_fill = PTHREAD_COND_INITIALIZER;
-pthread_t t1, t2;
+pthread_t *t;
 
-int mismatch=0, match=0;
+int fill=0, empty=0, mismatch=0, match=0;
 
 char *path_dir, *path_file;
 
-struct queue q1,q2,q3,q4;
+struct queue *q;
 
 int main(int argc, char **argv)
 {
-    char *dir1, *dir2;
-    int i,k;
+    int i,k,deb=0;
+    struct arg *ar;
 
-    k = argc-1;
+    if(strcmp(argv[argc-1],"-d")==0)
+        deb = 1;
 
-    dir1 = argv[1];
-    dir2 = argv[2];
+    k = argc-1-deb;
 
     if(k<2)
     {
@@ -48,64 +53,76 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    q = (struct queue *)malloc(2*k*sizeof(struct queue));
+    t = (pthread_t *)malloc(k*sizeof(pthread_t));
+
     for (i = 0; i < k; i++) 
     {
+        ar = (struct arg *)malloc(sizeof(struct arg));
         int l = strlen(argv[i+1]);
         if(argv[i+1][l-1]=='/')
-            argv[l-1]='\0';
-
+            argv[i+1][l-1]='\0';
+        createQueue(q+2*i);
+        createQueue(q+2*i+1);
+        enqueue(q+2*i+1,"/",DT_DIR);
+        ar->path = argv[i+1];
+        ar->i = i;
+        pthread_create(t+i, NULL, getFiles, (void*)ar);
     }
 
-    createQueue(&q1);
-    createQueue(&q2);
-    createQueue(&q3);
-    createQueue(&q4);
-
-    enqueue(&q3,"/",DT_DIR);
-    enqueue(&q4,"/",DT_DIR);
-
-    pthread_create(&t1, NULL, getFiles, (void*)argv[1]);
-    pthread_create(&t2, NULL, getFiles, (void*)argv[2]);
-
-    while(!isEmpty(&q3) && !isEmpty(&q4))
+    while(!isEmpty(&q[1]) && !isEmpty(&q[3]))
     {
         pthread_mutex_lock(&cond_mutex);
-        while(isEmpty(&q1) || isEmpty(&q2))
+        while(fill<k)
             pthread_cond_wait(&cond_fill, &cond_mutex);
         pthread_mutex_unlock(&cond_mutex);
 
+        fill = 0;
 
-        /*
-           printf("q1\n");
-           print(q1);
-           printf("\nq2\n");
-           print(q2);
-           printf("\nq3\n");
-           print(q3);
-           */
+        if(deb)
+        {
+            for (i = 0; i < k; i++) 
+            {
+                printf("q%d",2*i);
+                printf("\n");
+                print(q[2*i]);
+            }
+            for (i = 0; i < k; i++) 
+            {
+                printf("q%d",2*i+1);
+                printf("\n");
+                print(q[2*i+1]);
+            }
+        }
 
-        compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
+        compareQ(q,q+2,q+1,q+3,argv[1],argv[2]);
 
-        /*
-           printf("After modds\n");
-           printf("q1\n");
-           print(q1);
-           printf("\nq2\n");
-           print(q2);
-           printf("\nq3\n");
-           print(q3);
-           printf("\nq4\n");
-           print(q4);
-           */
+        printf("After modds\n");
+        if(deb)
+        {
+            for (i = 0; i < k; i++) 
+            {
+                printf("q%d",2*i);
+                printf("\n");
+                print(q[2*i]);
+            }
+            for (i = 0; i < k; i++) 
+            {
+                printf("q%d",2*i+1);
+                printf("\n");
+                print(q[2*i+1]);
+            }
+        }
 
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);
         pthread_mutex_unlock(&cond_mutex);
     }
 
-    //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
+    printf("Files \nDir1:%s\nDir2:%s\n",argv[1],argv[2]);
+
+    for (i = 0; i < k; i++) 
+        pthread_join(t[i], NULL);
 
     printf("\n\nTotal Matches: %d\nTotal mismatches: %d\n",match,mismatch);
 
@@ -114,28 +131,20 @@ int main(int argc, char **argv)
 
 void *getFiles(void *ptr)
 {
-    char *path;
-    char root[FILE_PATH_SIZE];
-    char filename[FILE_PATH_SIZE];
-    char temp[FILE_PATH_SIZE];
+    int i;
+    char *path, root[FILE_PATH_SIZE], filename[FILE_PATH_SIZE], temp[FILE_PATH_SIZE];
     DIR *dip;
     struct dirent *dit;
     struct queue *tq,*sq;
+    struct arg *ar;
 
-    path = (char *)ptr;
+    ar = (struct arg*)ptr;
 
-    if(pthread_equal(t1,pthread_self())!=0)
-    {
-        //printf("\n1\n");
-        tq = &q1;
-        sq = &q3;
-    }
-    else
-    {
-        //printf("\n2\n");
-        tq = &q2;
-        sq = &q4;
-    }
+    path = ar->path;
+    i = ar->i;
+
+    tq = q+2*i;
+    sq = q+2*i+1;
 
     while(!isEmpty(sq))
     {
@@ -159,6 +168,7 @@ void *getFiles(void *ptr)
                 }
             }
             pthread_mutex_lock(&cond_mutex);
+            fill+=1;
             pthread_cond_signal(&cond_fill);
             pthread_mutex_unlock(&cond_mutex);
         }
