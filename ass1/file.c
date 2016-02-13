@@ -62,7 +62,7 @@ int main(int argc, char * const *argv)
     pthread_create(&t1, NULL, getFiles, (void*)dir1);
     pthread_create(&t2, NULL, getFiles, (void*)dir2);
 
-    while(!isEmpty(&q3) && !isEmpty(&q4))
+    while(1)
     {
         pthread_mutex_lock(&cond_mutex);
         while(isEmpty(&q1) || isEmpty(&q2))
@@ -96,6 +96,9 @@ int main(int argc, char * const *argv)
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);
         pthread_mutex_unlock(&cond_mutex);
+
+        if(isEmpty(&q1) && isEmpty(&q3))
+            break;
     }
 
     //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
@@ -213,6 +216,7 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
                     h2 = h2->next;
                     dequeue(q2,NULL);
                 }
+                break;
             }
             if(f==0)
             {

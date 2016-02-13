@@ -22,7 +22,7 @@ struct arg {
 };
 
 void *getFiles(void *);
-void compareQ(struct queue *, struct queue *, struct queue *, struct queue *,char *, char *);
+void compareQ(char **, int);
 int compareFiles(char *file1, char *file2);
 
 pthread_mutex_t count_mut = PTHREAD_MUTEX_INITIALIZER;
@@ -64,13 +64,13 @@ int main(int argc, char **argv)
             argv[i+1][l-1]='\0';
         createQueue(q+2*i);
         createQueue(q+2*i+1);
-        enqueue(q+2*i+1,"/",DT_DIR);
+        enqueue(q+(2*i+1),"/",DT_DIR);
         ar->path = argv[i+1];
         ar->i = i;
         pthread_create(t+i, NULL, getFiles, (void*)ar);
     }
 
-    while(!isEmpty(&q[1]) && !isEmpty(&q[3]))
+    while(1)
     {
         pthread_mutex_lock(&cond_mutex);
         while(fill<k)
@@ -95,11 +95,11 @@ int main(int argc, char **argv)
             }
         }
 
-        compareQ(q,q+2,q+1,q+3,argv[1],argv[2]);
+        compareQ(argv, k);
 
-        printf("After modds\n");
         if(deb)
         {
+            printf("After modds\n");
             for (i = 0; i < k; i++) 
             {
                 printf("q%d",2*i);
@@ -117,6 +117,13 @@ int main(int argc, char **argv)
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);
         pthread_mutex_unlock(&cond_mutex);
+
+        int a=1;
+        for(i=0;i<k;i++)
+            a&=isEmpty(q+2*i+1);
+
+        if(a)
+            break;
     }
 
     printf("Files \nDir1:%s\nDir2:%s\n",argv[1],argv[2]);
@@ -180,99 +187,112 @@ void *getFiles(void *ptr)
     pthread_exit(0);
 }
 
-void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue *q4, char *root1, char *root2)
+void compareQ(char **root, int k)
 {
     struct node *h1,*h2,*t1,*t2;
-    int f=0,f2=0;
-
+    int f=0,f2=0,i,j;
     char file1[FILE_PATH_SIZE],file2[FILE_PATH_SIZE];
 
-    t1 = NULL;
-    h1 = q1->front;
-
-    while(h1!=NULL)
+    for (i = 0; i < k-1; i++) 
     {
-        t2 = NULL;
-        h2 = q2->front;
-        while(h2!=NULL)
+        t1 = NULL;
+        h1 = q[2*i].front;
+        while(h1!=NULL)
         {
-            if(strcmp(h1->x,h2->x)==0 && h1->d_type==h2->d_type)
+            for(j = i+1; j<k ; j++)
             {
-                f2=1;
-                if(h1->d_type==DT_DIR)
+                t2 = NULL;
+                h2 = q[2*j].front;
+                f2=0;
+                f=0;
+                while(h2!=NULL)
                 {
-                    enqueue(q3,h1->x,h1->d_type);
-                    enqueue(q4,h2->x,h2->d_type);
-                }
-                else if(h1->d_type != DT_UNKNOWN)
-                {
-                    sprintf(file1,"%s%s",root1,h1->x);
-                    sprintf(file2,"%s%s",root2,h2->x);
-                    if(compareFiles(file1,file2)!=1)
+                    if(strcmp(h1->x,h2->x)==0 && h1->d_type==h2->d_type)
                     {
-                        printf("Files %s & %s are different in content\n",file1,file2);
+                        f2=1; //match happened
+                        if(h1->d_type==DT_DIR)
+                        {
+                            enqueue(&q[2*i+1],h1->x,h1->d_type);
+                            enqueue(&q[2*j+1],h2->x,h2->d_type);
+                        }
+                        else if(h1->d_type != DT_UNKNOWN)
+                        {
+                            sprintf(file1,"%s%s",root[i+1],h1->x);
+                            sprintf(file2,"%s%s",root[j+1],h2->x);
+                            if(compareFiles(file1,file2)!=1)
+                            {
+                                printf("Files %s & %s (in fs%d and fs%d) respectively are different in content\n",file1,file2,i+1,j+1);
+                                mismatch+=1;
+                            }
+                            else
+                                match+=1;
+                        }
+                        if(t2!=NULL)
+                        {
+                            t2->next = h2->next;
+                            free(h2);
+                            h2 = t2;
+                        }
+                        else
+                        {
+                            f = 1; //the element being removed is at the beginning of the list
+                            h2 = h2->next;
+                            dequeue(&q[2*j],NULL);
+                        }
+                        break;
+                    }
+                    //construct to help advance on LL
+                    if(f==0)
+                    {
+                        t2 = h2;
+                        h2 = h2->next;
+                    }
+                    else
+                        f=0;
+                }
+                if(f2==0)
+                {
+                    if(h1->x[strlen(h1->x)-1]=='/')
+                    {
+                        printf("Directory is absent in fs%d and present in fs%d: %s\n",j+1,i+1,h1->x);
                         mismatch+=1;
                     }
                     else
-                        match+=1;
+                    {
+                        printf("File is absent in fs%d and present in fs%d: %s\n",j+1,i+1,h1->x);
+                        mismatch+=1;
+                    }
                 }
-                if(t2!=NULL)
+                else
+                    f2=0;
+            }
+            t1 = h1;
+            h1 = h1->next;
+            dequeue(&q[2*i],NULL);
+        }
+    }
+    for(i=0;i<k;i++)
+    {
+        if(!isEmpty(q+2*i))
+        {
+            h2 = q[2*i].front;
+            while(h2!=NULL)
+            {
+                if(h2->x[strlen(h2->x)-1]=='/')
                 {
-                    t2->next = h2->next;
-                    free(h2);
-                    h2 = t2;
+                    printf("Directory is new fs 2: %s\n",h2->x);
+                    mismatch+=1;
                 }
                 else
                 {
-                    f = 1;
-                    h2 = h2->next;
-                    dequeue(q2,NULL);
+                    printf("File is new fs 2: %s\n",h2->x);
+                    mismatch+=1;
                 }
-            }
-            if(f==0)
-            {
-                t2 = h2;
-                h2 = h2->next;
-            }
-            else
-                f=0;
-        }
-        if(f2==0)
-        {
-            if(h1->x[strlen(h1->x)-1]=='/')
-            {
-                printf("Directory is new fs 1: %s\n",h1->x);
-                mismatch+=1;
-            }
-            else
-            {
-                printf("File is new fs 1: %s\n",h1->x);
-                mismatch+=1;
+                h2=h2->next;
+                dequeue(&q[2*i],NULL);
             }
         }
-        else
-            f2=0;
-        t1 = h1;
-        h1 = h1->next;
-        dequeue(q1,NULL);
     }
-    h2 = q2->front;
-    while(h2!=NULL)
-    {
-        if(h2->x[strlen(h2->x)-1]=='/')
-        {
-            printf("Directory is new fs 2: %s\n",h2->x);
-            mismatch+=1;
-        }
-        else
-        {
-            printf("File is new fs 2: %s\n",h2->x);
-            mismatch+=1;
-        }
-        h2=h2->next;
-        dequeue(q2,NULL);
-    }
-    q2 = NULL;
 }
 
 int compareFiles(char *file1, char *file2)
