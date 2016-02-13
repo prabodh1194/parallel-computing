@@ -126,8 +126,6 @@ int main(int argc, char **argv)
             break;
     }
 
-    printf("Files \nDir1:%s\nDir2:%s\n",argv[1],argv[2]);
-
     for (i = 0; i < k; i++) 
         pthread_join(t[i], NULL);
 
@@ -227,17 +225,20 @@ void compareQ(char **root, int k)
                             else
                                 match+=1;
                         }
-                        if(t2!=NULL)
+                        if(i+1 == k-1)
                         {
-                            t2->next = h2->next;
-                            free(h2);
-                            h2 = t2;
-                        }
-                        else
-                        {
-                            f = 1; //the element being removed is at the beginning of the list
-                            h2 = h2->next;
-                            dequeue(&q[2*j],NULL);
+                            if(t2!=NULL)
+                            {
+                                t2->next = h2->next;
+                                free(h2);
+                                h2 = t2;
+                            }
+                            else
+                            {
+                                f = 1;
+                                h2 = h2->next;
+                                dequeue(&q[2*j],NULL);
+                            }
                         }
                         break;
                     }
@@ -271,6 +272,7 @@ void compareQ(char **root, int k)
             dequeue(&q[2*i],NULL);
         }
     }
+
     for(i=0;i<k;i++)
     {
         if(!isEmpty(q+2*i))
@@ -280,12 +282,12 @@ void compareQ(char **root, int k)
             {
                 if(h2->x[strlen(h2->x)-1]=='/')
                 {
-                    printf("Directory is new fs 2: %s\n",h2->x);
+                    printf("Directory is absent in fs%d and present in fs%d: %s\n",i,i+1,h2->x);
                     mismatch+=1;
                 }
                 else
                 {
-                    printf("File is new fs 2: %s\n",h2->x);
+                    printf("File is absent in fs%d and present in fs%d: %s\n",i,i+1,h2->x);
                     mismatch+=1;
                 }
                 h2=h2->next;
