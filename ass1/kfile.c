@@ -32,24 +32,29 @@ char *path_dir, *path_file;
 
 struct queue q1,q2,q3,q4;
 
-int main(int argc, char * const *argv)
+int main(int argc, char **argv)
 {
     char *dir1, *dir2;
-    int c;
+    int i,k;
+
+    k = argc-1;
 
     dir1 = argv[1];
     dir2 = argv[2];
 
-    if(argc<3)
+    if(k<2)
     {
-        fprintf(stderr, "Looks like you are missing directory paths.\n Usage:: ./file <path 1> <path 2>\n");
+        fprintf(stderr, "Looks like you are missing directory paths.\n Usage:: ./file <path 1> <path 2> ... <path k>\n");
         return -1;
     }
 
-    if(dir1[strlen(dir1)-1]=='/')
-        dir1[strlen(dir1)-1]='\0';
-    if(dir2[strlen(dir2)-1]=='/')
-        dir2[strlen(dir2)-1]='\0';
+    for (i = 0; i < k; i++) 
+    {
+        int l = strlen(argv[i+1]);
+        if(argv[i+1][l-1]=='/')
+            argv[l-1]='\0';
+
+    }
 
     createQueue(&q1);
     createQueue(&q2);
@@ -59,8 +64,8 @@ int main(int argc, char * const *argv)
     enqueue(&q3,"/",DT_DIR);
     enqueue(&q4,"/",DT_DIR);
 
-    pthread_create(&t1, NULL, getFiles, (void*)dir1);
-    pthread_create(&t2, NULL, getFiles, (void*)dir2);
+    pthread_create(&t1, NULL, getFiles, (void*)argv[1]);
+    pthread_create(&t2, NULL, getFiles, (void*)argv[2]);
 
     while(!isEmpty(&q3) && !isEmpty(&q4))
     {
@@ -71,27 +76,27 @@ int main(int argc, char * const *argv)
 
 
         /*
-        printf("q1\n");
-        print(q1);
-        printf("\nq2\n");
-        print(q2);
-        printf("\nq3\n");
-        print(q3);
-        */
+           printf("q1\n");
+           print(q1);
+           printf("\nq2\n");
+           print(q2);
+           printf("\nq3\n");
+           print(q3);
+           */
 
         compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
 
         /*
-        printf("After modds\n");
-        printf("q1\n");
-        print(q1);
-        printf("\nq2\n");
-        print(q2);
-        printf("\nq3\n");
-        print(q3);
-        printf("\nq4\n");
-        print(q4);
-        */
+           printf("After modds\n");
+           printf("q1\n");
+           print(q1);
+           printf("\nq2\n");
+           print(q2);
+           printf("\nq3\n");
+           print(q3);
+           printf("\nq4\n");
+           print(q4);
+           */
 
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);

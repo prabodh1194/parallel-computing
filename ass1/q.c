@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include <string.h>
-#include "q.h"
+#include "include/q.h"
 
 void createQueue(struct queue *q)
 {
