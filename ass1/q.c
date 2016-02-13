@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include <string.h>
-#include "q.h"
+#include "include/q.h"
 
 void createQueue(struct queue *q)
 {
@@ -36,6 +36,8 @@ void dequeue(struct queue *q, char *a)
     strcpy(a , q->front->x);
     temp = q->front;
     q->front = q->front->next;
+    if(q->front == NULL)
+        q->rear = NULL;
     free(temp);
 }
 

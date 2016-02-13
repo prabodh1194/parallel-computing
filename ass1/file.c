@@ -11,7 +11,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/stat.h>
-#include "q.h"
+#include "include/q.h"
 
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
@@ -40,9 +40,9 @@ int main(int argc, char * const *argv)
     dir1 = argv[1];
     dir2 = argv[2];
 
-    if(argc<3 || dir1[0]=='-' || dir2[0]=='-')
+    if(argc<3)
     {
-        fprintf(stderr, "Looks like you are missing directory paths.\n Usage:: ./file <path 1> <path 2> [-f]\n");
+        fprintf(stderr, "Looks like you are missing directory paths.\n Usage:: ./file <path 1> <path 2>\n");
         return -1;
     }
 
@@ -50,24 +50,6 @@ int main(int argc, char * const *argv)
         dir1[strlen(dir1)-1]='\0';
     if(dir2[strlen(dir2)-1]=='/')
         dir2[strlen(dir2)-1]='\0';
-
-    while((c = getopt(argc, argv, "f:"))!=-1)
-        switch(c)
-        {
-            case 'f':
-                //fileno = atoi(optarg);
-                break;
-            case '?':
-                if(optopt == 'f')
-                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-                else if(isprint(optopt))
-                    fprintf(stderr, "Unknown option '-%c'.]n", optopt);
-                else
-                    fprintf(stderr, "Unknown option character '\\x%x'.\n",optopt);
-                return 1;
-            default:
-                abort();
-        }
 
     createQueue(&q1);
     createQueue(&q2);
@@ -80,7 +62,7 @@ int main(int argc, char * const *argv)
     pthread_create(&t1, NULL, getFiles, (void*)dir1);
     pthread_create(&t2, NULL, getFiles, (void*)dir2);
 
-    while(!isEmpty(&q3) && !isEmpty(&q4))
+    while(1)
     {
         pthread_mutex_lock(&cond_mutex);
         while(isEmpty(&q1) || isEmpty(&q2))
@@ -114,6 +96,9 @@ int main(int argc, char * const *argv)
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);
         pthread_mutex_unlock(&cond_mutex);
+
+        if(isEmpty(&q1) && isEmpty(&q3))
+            break;
     }
 
     //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
@@ -231,6 +216,7 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
                     h2 = h2->next;
                     dequeue(q2,NULL);
                 }
+                break;
             }
             if(f==0)
             {
