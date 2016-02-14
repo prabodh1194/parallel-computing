@@ -1,6 +1,11 @@
 /*
- * Given two directory paths, we'll compare contents of all the files in those
- * two directories.
+ * K 
+ * Given K directory paths, we'll compare contents of all the files in those
+ * K directories.
+ * Level order tree traversal used.
+ * The threads take one directory and put their contents in a queue. A
+ * comparison function checks for the common elements in a particular directory
+ * of a level
  */
 
 #include <omp.h>
@@ -57,8 +62,12 @@ int main(int argc, char **argv)
         int l = strlen(argv[i+1]);
         if(argv[i+1][l-1]=='/')
             argv[i+1][l-1]='\0';
+    //contents of the directories at same level pushed to theses queues 
+    //having even indices, and content it shares with other directory is pushed
+    //in odd index of q
         createQueue(q+2*i);
         createQueue(q+2*i+1);
+    //queuing root of fs
         enqueue(q+(2*i+1),"/",DT_DIR);
     }
 
@@ -70,6 +79,7 @@ int main(int argc, char **argv)
         getFiles(argv[tid+1]);
     }
 
+    //Count number of matcjing filesystems
     int fsm = 0, one=0;
     for(i=0;i<k;i++)
     {
@@ -139,6 +149,7 @@ void getFiles(char *path)
                 }
             }
         }
+        //wait till, a level has not been traversed absolutely
 #pragma omp barrier
 #pragma omp single
         {
@@ -156,6 +167,8 @@ void getFiles(char *path)
                 }
             }
 
+        //compare the contents of queus with even indices and put common
+        //directories in the ones with odd index
             compareQ(args, k, &fsk);
 
             if(deb)
@@ -171,6 +184,7 @@ void getFiles(char *path)
                 }
             }
         }
+        //if no more of directories are left to be traversed, exit loop
         int l,a = 1;
         for (l = 0; l < k; l++)
             a&=isEmpty(&q[2*l+1]);
@@ -184,6 +198,10 @@ void compareQ(char **root, int k, char ***fsk)
     struct node *h1,*h2,*t2;
     int f=0,f2=0,i,j;
     char file1[FILE_PATH_SIZE],file2[FILE_PATH_SIZE];
+
+    //select one queue and match it against all the others.
+    //store the common directories in the queues so that further traversals can
+    //happen to ensure common FSs
 
     for (i = 0; i < k-1; i++) 
     {

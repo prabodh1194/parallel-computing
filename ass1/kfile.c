@@ -1,6 +1,11 @@
 /*
- * Given two directory paths, we'll compare contents of all the files in those
- * two directories.
+ * K 
+ * Given K directory paths, we'll compare contents of all the files in those
+ * K directories.
+ * Level order tree traversal used.
+ * The threads take one directory and put their contents in a queue. A
+ * comparison function checks for the common elements in a particular directory
+ * of a level
  */
 
 #include <stdio.h>
@@ -70,8 +75,12 @@ int main(int argc, char **argv)
         int l = strlen(argv[i+1]);
         if(argv[i+1][l-1]=='/')
             argv[i+1][l-1]='\0';
+    //contents of the directories at same level pushed to theses queues 
+    //having even indices, and content it shares with other directory is pushed
+    //in odd index of q
         createQueue(q+2*i);
         createQueue(q+2*i+1);
+    //queuing root of fs
         enqueue(q+(2*i+1),"/",DT_DIR);
         ar->path = argv[i+1];
         ar->i = i;
@@ -80,6 +89,7 @@ int main(int argc, char **argv)
 
     while(1)
     {
+        //wait till, a level has not been traversed absolutely
         pthread_mutex_lock(&cond_mutex);
         while(fill+fin<k)
             pthread_cond_wait(&cond_fill, &cond_mutex);
@@ -103,6 +113,8 @@ int main(int argc, char **argv)
             }
         }
 
+        //compare the contents of queus with even indices and put common
+        //directories in the ones with odd index
         compareQ(argv, k, &fsk);
 
         if(deb)
@@ -122,10 +134,13 @@ int main(int argc, char **argv)
             }
         }
 
+        //the queues have been consumed
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);
         pthread_mutex_unlock(&cond_mutex);
 
+        //if all queues which hold common content, i.e., ones with odd indices
+        //are empty and hence no more further traversal is possible
         int a=1;
         for(i=0;i<k;i++)
             a&=isEmpty(q+2*i+1);
@@ -137,6 +152,7 @@ int main(int argc, char **argv)
     for (i = 0; i < k; i++) 
         pthread_join(t[i], NULL);
 
+    //count matching filesystems
     int fsm = 0, one = 0;
     for(i=0;i<k;i++)
     {
@@ -209,16 +225,20 @@ void *getFiles(void *ptr)
                     enqueue(tq,temp,dit->d_type);
                 }
             }
+            //count all the queues that have been filled for comparison later
             pthread_mutex_lock(&cond_mutex);
             fill+=1;
             pthread_cond_signal(&cond_fill);
             pthread_mutex_unlock(&cond_mutex);
         }
+        //wait for the queues to empty
         pthread_mutex_lock(&cond_mutex);
         while(!isEmpty(tq))
             pthread_cond_wait(&cond_empty, &cond_mutex);
         pthread_mutex_unlock(&cond_mutex);
     }
+    //certain traversal can complete before the others, hence indicate the ones
+    //that have finished.
     pthread_mutex_lock(&cond_mutex);
     fin+=1;
     pthread_mutex_unlock(&cond_mutex);
@@ -230,6 +250,10 @@ void compareQ(char **root, int k, char ***fsk)
     struct node *h1,*h2,*t2;
     int f=0,f2=0,i,j;
     char file1[FILE_PATH_SIZE],file2[FILE_PATH_SIZE];
+
+    //select one queue and match it against all the others.
+    //store the common directories in the queues so that further traversals can
+    //happen to ensure common FSs
 
     for (i = 0; i < k-1; i++) 
     {

@@ -1,6 +1,10 @@
 /*
+ * K = 2
  * Given two directory paths, we'll compare contents of all the files in those
  * two directories.
+ * Level order tree traversal used.
+ * The threads take one directory and put their contents in a queue. A
+ * comparison function checks for the common elements.
  */
 
 #include <omp.h>
@@ -47,11 +51,17 @@ int main(int argc, char * const *argv)
     if(dir2[strlen(dir2)-1]=='/')
         dir2[strlen(dir2)-1]='\0';
 
+    //contents of two directories at same level pushed to theses queues by
+    //filesystem 1 and 2 respectively.
     createQueue(&q1);
     createQueue(&q2);
+    //common directories pushed to these queues.
+    //The threads look at theses queues to determine next directory whose
+    //contents are to be analysed.
     createQueue(&q3);
     createQueue(&q4);
 
+    //queuing root of fs
     enqueue(&q3,"/",DT_DIR);
     enqueue(&q4,"/",DT_DIR);
 
@@ -116,6 +126,8 @@ void getFiles(char *path)
                 }
             }
         }
+        //wait till, a level has not been traversed absolutely
+        //q1 and q2 are filled
 #pragma omp barrier
 #pragma omp single
         {
@@ -124,6 +136,8 @@ void getFiles(char *path)
                 printf("q1\n"); print(q1); printf("\nq2\n"); print(q2); printf("\nq3\n"); print(q3);
             }
 
+            //q1 and q2 consists of contents of a level.
+            //q3 and q4 contain the common contents of a level.
             compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
 
             if(deb)
@@ -134,6 +148,8 @@ void getFiles(char *path)
     }
 }
 
+//compare contents of q1 and q2 and push common contents back to q3 and a4 for
+//level-by-level traversal
 void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue *q4, char *root1, char *root2)
 {
     struct node *h1,*h2,*t2;
@@ -154,6 +170,7 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
                 f2=1;
                 if(h1->d_type==DT_DIR)
                 {
+                    //put common directories for further traversal
                     enqueue(q3,h1->x,h1->d_type);
                     enqueue(q4,h2->x,h2->d_type);
                 }

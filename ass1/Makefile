@@ -1,4 +1,4 @@
-CC=vtcc
+CC=gcc
 
 all: clean file kfile opfile opkfile
 	make cleano

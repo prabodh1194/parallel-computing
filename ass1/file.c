@@ -1,6 +1,9 @@
 /*
  * Given two directory paths, we'll compare contents of all the files in those
  * two directories.
+ * Level order tree traversal used.
+ * The threads take one directory and put their contents in a queue. A
+ * comparison function checks for the common elements.
  */
 
 #include <stdio.h>
@@ -48,11 +51,17 @@ int main(int argc, char * const *argv)
     if(dir2[strlen(dir2)-1]=='/')
         dir2[strlen(dir2)-1]='\0';
 
+    //contents of two directories at same level pushed to theses queues by
+    //filesystem 1 and 2 respectively.
     createQueue(&q1);
     createQueue(&q2);
+    //common directories pushed to these queues.
+    //The threads look at theses queues to determine next directory whose
+    //contents are to be analysed.
     createQueue(&q3);
     createQueue(&q4);
 
+    //queuing root of fs
     enqueue(&q3,"/",DT_DIR);
     enqueue(&q4,"/",DT_DIR);
 
@@ -61,13 +70,14 @@ int main(int argc, char * const *argv)
 
     while(1)
     {
+        //wait till, a level has not been traversed absolutely
         pthread_mutex_lock(&cond_mutex);
         while(isEmpty(&q1) || isEmpty(&q2))
             pthread_cond_wait(&cond_fill, &cond_mutex);
         pthread_mutex_unlock(&cond_mutex);
 
-
         /*
+        //debug
         printf("q1\n");
         print(q1);
         printf("\nq2\n");
@@ -76,6 +86,8 @@ int main(int argc, char * const *argv)
         print(q3);
         */
 
+        //q1 and q2 consists of contents of a level.
+        //q3 and q4 contain the common contents of a level.
         compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
 
         /*
@@ -90,6 +102,7 @@ int main(int argc, char * const *argv)
         print(q4);
         */
 
+        //the queues q1 and q2 have been emptied
         pthread_mutex_lock(&cond_mutex);
         pthread_cond_broadcast(&cond_empty);
         pthread_mutex_unlock(&cond_mutex);
@@ -156,11 +169,13 @@ void *getFiles(void *ptr)
                     enqueue(tq,temp,dit->d_type);
                 }
             }
+            //queues q1 or q2 have been filled
             pthread_mutex_lock(&cond_mutex);
             pthread_cond_signal(&cond_fill);
             pthread_mutex_unlock(&cond_mutex);
         }
         pthread_mutex_lock(&cond_mutex);
+        //wait for q1 and q2 to empty
         while(!isEmpty(tq))
             pthread_cond_wait(&cond_empty, &cond_mutex);
         pthread_mutex_unlock(&cond_mutex);
@@ -168,6 +183,8 @@ void *getFiles(void *ptr)
     pthread_exit(0);
 }
 
+//compare contents of q1 and q2 and push common contents back to q3 and a4 for
+//level-by-level traversal
 void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue *q4, char *root1, char *root2)
 {
     struct node *h1,*h2,*t2;
