@@ -32,6 +32,7 @@ void enqueue(struct queue *q, char *d, unsigned char d_t)
         q->rear->next = node;
         q->rear = node;
     }
+    q->size+=1;
 }
 
 void dequeue(struct queue *q, char *a)

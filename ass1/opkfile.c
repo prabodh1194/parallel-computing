@@ -17,18 +17,18 @@
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
 
 void getFiles(char *);
-void compareQ(char **, int);
+void compareQ(char **, int, char ***);
 int compareFiles(char *file1, char *file2);
 
 int fill=0, fin=0, empty=0, mismatch=0, match=0, deb, k;
 
-char *path_dir, *path_file, **args;
+char *path_dir, *path_file, **args, **fsk;
 
 struct queue *q;
 
 int main(int argc, char **argv)
 {
-    int i;
+    int i,j;
 
     args = argv;
 
@@ -43,6 +43,13 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    fsk = (char **)malloc(k*sizeof(char *));
+    for (i = 0; i < k; i++) 
+    {
+        fsk[i] = (char *)malloc(k*sizeof(char));
+        for (j = 0; j < k; j++) 
+            fsk[i][j]=1;            
+    }
     q = (struct queue *)malloc(2*k*sizeof(struct queue));
 
     for (i = 0; i < k; i++) 
@@ -63,8 +70,35 @@ int main(int argc, char **argv)
         getFiles(argv[tid+1]);
     }
 
-    printf("\n\nTotal Matches: %d\nTotal mismatches: %d\n",match,mismatch);
+    int fsm = 0, one=0;
+    for(i=0;i<k;i++)
+    {
+        one = 0;
+        printf("\n");
+        for(j=0;j<k;j++)
+        {
+            if(deb)
+                if(i!=j)
+                    printf("%d\t",fsk[i][j]);
+                else
+                    printf("0\t");
+            if(fsk[i][j]==1 && i!=j)
+                one=1;
+        }
+        if(one)
+            fsm+=1;
+    }
 
+    printf("\n\nTotal Matches: %d\nTotal mismatches: %d\nFilesystems matching:%d/%d\n",match,mismatch,fsm,k);
+
+    k/=2;
+    if(k%2!=0)
+        k+=1;
+
+    if(mismatch==0)
+        printf("Total Copy\n");
+    else if(fsm>=k)
+        printf("Majority Copy\n");
     return 0;
 }
 
@@ -85,6 +119,7 @@ void getFiles(char *path)
         {
             dequeue(sq,root);
             sprintf(filename,"%s%s",path,root);
+            tq->size=0;
 
             if(NULL == (dip = opendir(filename)))
             {
@@ -121,7 +156,7 @@ void getFiles(char *path)
                 }
             }
 
-            compareQ(args, k);
+            compareQ(args, k, &fsk);
 
             if(deb)
             {
@@ -144,7 +179,7 @@ void getFiles(char *path)
     }
 }
 
-void compareQ(char **root, int k)
+void compareQ(char **root, int k, char ***fsk)
 {
     struct node *h1,*h2,*t2;
     int f=0,f2=0,i,j;
@@ -169,9 +204,9 @@ void compareQ(char **root, int k)
                         if(h1->d_type==DT_DIR)
                         {
                             if(!isExists(&q[2*i+1],h1->x))
-                            enqueue(&q[2*i+1],h1->x,h1->d_type);
+                                enqueue(&q[2*i+1],h1->x,h1->d_type);
                             if(!isExists(&q[2*j+1],h2->x))
-                            enqueue(&q[2*j+1],h2->x,h2->d_type);
+                                enqueue(&q[2*j+1],h2->x,h2->d_type);
                         }
                         else if(h1->d_type != DT_UNKNOWN)
                         {
@@ -181,6 +216,8 @@ void compareQ(char **root, int k)
                             {
                                 printf("Files %s & %s (in fs%d and fs%d) respectively are different in content\n",file1,file2,i+1,j+1);
                                 mismatch+=1;
+                                (*fsk)[i][j]=2;
+                                (*fsk)[j][i]=2;
                             }
                             else
                                 match+=1;
@@ -213,6 +250,8 @@ void compareQ(char **root, int k)
                 }
                 if(f2==0)
                 {
+                    (*fsk)[i][j]=2;
+                    (*fsk)[j][i]=2;
                     if(h1->x[strlen(h1->x)-1]=='/')
                     {
                         printf("Directory is absent in fs%d and present in fs%d: %s\n",j+1,i+1,h1->x);
@@ -226,6 +265,10 @@ void compareQ(char **root, int k)
                 }
                 else
                     f2=0;
+                if(q[2*i].size!=q[2*j].size)
+                {
+                    (*fsk)[i][j] = (*fsk)[j][i] = 2;
+                }
             }
             h1 = h1->next;
             dequeue(&q[2*i],NULL);
@@ -239,6 +282,8 @@ void compareQ(char **root, int k)
             h2 = q[2*i].front;
             while(h2!=NULL)
             {
+                (*fsk)[i][i-1]=2;
+                (*fsk)[i-1][i]=2;
                 if(h2->x[strlen(h2->x)-1]=='/')
                 {
                     printf("Directory is absent in fs%d and present in fs%d: %s\n",i,i+1,h2->x);
