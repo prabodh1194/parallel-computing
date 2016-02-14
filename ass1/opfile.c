@@ -10,7 +10,6 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <string.h>
-#include <pthread.h>
 #include <sys/stat.h>
 #include "include/q.h"
 
@@ -224,17 +223,4 @@ void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue
         dequeue(q2,NULL);
     }
     q2 = NULL;
-}
-
-int compareFiles(char *file1, char *file2)
-{
-    struct stat buf1, buf2;
-
-    //compare file size
-    stat(file1, &buf1);
-    stat(file2, &buf2);
-
-    if(buf1.st_size != buf2.st_size)
-        return -1;
-    return 1;
 }
