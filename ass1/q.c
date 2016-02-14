@@ -54,6 +54,20 @@ int isEmpty(struct queue *q)
         return 0;
 }
 
+int isExists(struct queue *q, char *a)
+{
+    struct node *t;
+    t = q->front;
+
+    while(t!=NULL)
+    {
+        if(strcmp(t->x, a)==0)
+            return 1;
+        t = t->next;
+    }
+    return 0;
+}
+
 void print(struct queue q)
 {
     struct node *t;

@@ -168,7 +168,9 @@ void compareQ(char **root, int k)
                         f2=1; //match happened
                         if(h1->d_type==DT_DIR)
                         {
+                            if(!isExists(&q[2*i+1],h1->x))
                             enqueue(&q[2*i+1],h1->x,h1->d_type);
+                            if(!isExists(&q[2*j+1],h2->x))
                             enqueue(&q[2*j+1],h2->x,h2->d_type);
                         }
                         else if(h1->d_type != DT_UNKNOWN)
