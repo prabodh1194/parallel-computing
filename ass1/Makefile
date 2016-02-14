@@ -13,17 +13,17 @@ opkfile: clean opkfile.o q.o sha1.o
 	$(CC) sha1.o q.o opkfile.o -o opkfile -l c -g -fopenmp
 
 file.o: 
-	$(CC) file.c -Wall -c -g
+	$(CC) file.c  -c -g
 kfile.o: 
-	$(CC) kfile.c -Wall -c -g
+	$(CC) kfile.c  -c -g
 opfile.o:
-	$(CC) opfile.c -Wall -c -fopenmp -g
+	$(CC) opfile.c  -c -fopenmp -g
 opkfile.o:
-	$(CC) opkfile.c -Wall -c -fopenmp -g
+	$(CC) opkfile.c  -c -fopenmp -g
 q.o:
-	$(CC) q.c -Wall -c -g
+	$(CC) q.c  -c -g
 sha1.o:
-	$(CC) sha1.c -Wall -c
+	$(CC) sha1.c  -c
 
 clean:
 	rm -f file kfile opfile opkfile q *.o .fuse_hidden*
