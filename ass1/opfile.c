@@ -68,6 +68,9 @@ int main(int argc, char * const *argv)
 
     printf("\n\nTotal Matches: %d\nTotal mismatches: %d\n",match,mismatch);
 
+    if(mismatch==0)
+        printf("Common copy\n");
+
     return 0;
 }
 

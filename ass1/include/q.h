@@ -10,6 +10,7 @@ struct node
 struct queue
 {
     struct node *front, *rear;
+    int size;
 };
 
 void createQueue(struct queue *);
