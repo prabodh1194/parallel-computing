@@ -3,6 +3,7 @@
  * two directories.
  */
 
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -16,28 +17,25 @@
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
 
-void *getFiles(void *);
+void getFiles(char *);
 void compareQ(struct queue *, struct queue *, struct queue *, struct queue *,char *, char *);
 int compareFiles(char *file1, char *file2);
 
-pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_fill = PTHREAD_COND_INITIALIZER;
-pthread_t t1, t2;
+int mismatch=0, match=0, deb;
 
-int mismatch=0, match=0;
-
-char *path_dir, *path_file;
+char *path_dir, *path_file, *dir1, *dir2;
 
 struct queue q1,q2,q3,q4;
 
 int main(int argc, char * const *argv)
 {
-    char *dir1, *dir2;
+    deb = 0;
 
     dir1 = argv[1];
     dir2 = argv[2];
+
+    if(strcmp(argv[argc-1],"-d")==0)
+        deb = 1;
 
     if(argc<3)
     {
@@ -58,70 +56,30 @@ int main(int argc, char * const *argv)
     enqueue(&q3,"/",DT_DIR);
     enqueue(&q4,"/",DT_DIR);
 
-    pthread_create(&t1, NULL, getFiles, (void*)dir1);
-    pthread_create(&t2, NULL, getFiles, (void*)dir2);
+    omp_set_num_threads(2);
 
-    while(1)
+#pragma omp parallel
     {
-        pthread_mutex_lock(&cond_mutex);
-        while(isEmpty(&q1) || isEmpty(&q2))
-            pthread_cond_wait(&cond_fill, &cond_mutex);
-        pthread_mutex_unlock(&cond_mutex);
-
-
-        /*
-        printf("q1\n");
-        print(q1);
-        printf("\nq2\n");
-        print(q2);
-        printf("\nq3\n");
-        print(q3);
-        */
-
-        compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
-
-        /*
-        printf("After modds\n");
-        printf("q1\n");
-        print(q1);
-        printf("\nq2\n");
-        print(q2);
-        printf("\nq3\n");
-        print(q3);
-        printf("\nq4\n");
-        print(q4);
-        */
-
-        pthread_mutex_lock(&cond_mutex);
-        pthread_cond_broadcast(&cond_empty);
-        pthread_mutex_unlock(&cond_mutex);
-
-        if(isEmpty(&q1) && isEmpty(&q3))
-            break;
+        int tid = omp_get_thread_num();
+        //printf("%d %d\n",omp_get_thread_num(),omp_get_num_threads());
+        getFiles(argv[tid+1]);
     }
 
     //printf("Files %d\nDir1:%s\nDir2:%s\n",fileno,dir1,dir2);
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
 
     printf("\n\nTotal Matches: %d\nTotal mismatches: %d\n",match,mismatch);
 
     return 0;
 }
 
-void *getFiles(void *ptr)
+void getFiles(char *path)
 {
-    char *path;
-    char root[FILE_PATH_SIZE];
-    char filename[FILE_PATH_SIZE];
-    char temp[FILE_PATH_SIZE];
+    char root[FILE_PATH_SIZE], filename[FILE_PATH_SIZE], temp[FILE_PATH_SIZE];
     DIR *dip;
     struct dirent *dit;
     struct queue *tq,*sq;
 
-    path = (char *)ptr;
-
-    if(pthread_equal(t1,pthread_self())!=0)
+    if(omp_get_thread_num()==0)
     {
         //printf("\n1\n");
         tq = &q1;
@@ -155,16 +113,23 @@ void *getFiles(void *ptr)
                     enqueue(tq,temp,dit->d_type);
                 }
             }
-            pthread_mutex_lock(&cond_mutex);
-            pthread_cond_signal(&cond_fill);
-            pthread_mutex_unlock(&cond_mutex);
         }
-        pthread_mutex_lock(&cond_mutex);
-        while(!isEmpty(tq))
-            pthread_cond_wait(&cond_empty, &cond_mutex);
-        pthread_mutex_unlock(&cond_mutex);
+#pragma omp barrier
+#pragma omp single
+        {
+            if(deb)
+            {
+                printf("q1\n"); print(q1); printf("\nq2\n"); print(q2); printf("\nq3\n"); print(q3);
+            }
+
+            compareQ(&q1, &q2, &q3, &q4, dir1, dir2);
+
+            if(deb)
+            {
+                printf("After modds\n"); printf("q1\n"); print(q1); printf("\nq2\n"); print(q2); printf("\nq3\n"); print(q3); printf("\nq4\n"); print(q4);
+            }
+        }
     }
-    pthread_exit(0);
 }
 
 void compareQ(struct queue *q1, struct queue *q2, struct queue *q3, struct queue *q4, char *root1, char *root2)
