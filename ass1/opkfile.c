@@ -3,44 +3,34 @@
  * two directories.
  */
 
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <string.h>
-#include <pthread.h>
 #include <sys/stat.h>
 #include "include/q.h"
 
 #define FILE_NUMBER 100 //number of files in the directories.
 #define FILE_NAME_SIZE 256 //number of permissible characters in file name in linux
 
-struct arg {
-    char *path;
-    int i;
-};
-
-void *getFiles(void *);
+void getFiles(char *);
 void compareQ(char **, int);
 int compareFiles(char *file1, char *file2);
 
-pthread_mutex_t count_mut = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_fill = PTHREAD_COND_INITIALIZER;
-pthread_t *t;
+int fill=0, fin=0, empty=0, mismatch=0, match=0, deb, k;
 
-int fill=0, fin=0, empty=0, mismatch=0, match=0;
-
-char *path_dir, *path_file;
+char *path_dir, *path_file, **args;
 
 struct queue *q;
 
 int main(int argc, char **argv)
 {
-    int i,k,deb=0;
-    struct arg *ar;
+    int i;
+
+    args = argv;
 
     if(strcmp(argv[argc-1],"-d")==0)
         deb = 1;
@@ -54,138 +44,104 @@ int main(int argc, char **argv)
     }
 
     q = (struct queue *)malloc(2*k*sizeof(struct queue));
-    t = (pthread_t *)malloc(k*sizeof(pthread_t));
 
     for (i = 0; i < k; i++) 
     {
-        ar = (struct arg *)malloc(sizeof(struct arg));
         int l = strlen(argv[i+1]);
         if(argv[i+1][l-1]=='/')
             argv[i+1][l-1]='\0';
         createQueue(q+2*i);
         createQueue(q+2*i+1);
         enqueue(q+(2*i+1),"/",DT_DIR);
-        ar->path = argv[i+1];
-        ar->i = i;
-        pthread_create(t+i, NULL, getFiles, (void*)ar);
     }
 
-    while(1)
+    omp_set_num_threads(k);
+
+#pragma omp parallel
     {
-        pthread_mutex_lock(&cond_mutex);
-        while(fill+fin<k)
-            pthread_cond_wait(&cond_fill, &cond_mutex);
-        pthread_mutex_unlock(&cond_mutex);
-
-        fill = 0;
-
-        if(deb)
-        {
-            for (i = 0; i < k; i++) 
-            {
-                printf("q%d",2*i);
-                printf("\n");
-                print(q[2*i]);
-            }
-            for (i = 0; i < k; i++) 
-            {
-                printf("q%d",2*i+1);
-                printf("\n");
-                print(q[2*i+1]);
-            }
-        }
-
-        compareQ(argv, k);
-
-        if(deb)
-        {
-            printf("After modds\n");
-            for (i = 0; i < k; i++) 
-            {
-                printf("q%d",2*i);
-                printf("\n");
-                print(q[2*i]);
-            }
-            for (i = 0; i < k; i++) 
-            {
-                printf("q%d",2*i+1);
-                printf("\n");
-                print(q[2*i+1]);
-            }
-        }
-
-        pthread_mutex_lock(&cond_mutex);
-        pthread_cond_broadcast(&cond_empty);
-        pthread_mutex_unlock(&cond_mutex);
-
-        int a=1;
-        for(i=0;i<k;i++)
-            a&=isEmpty(q+2*i+1);
-
-        if(a)
-            break;
+        int tid = omp_get_thread_num();
+        getFiles(argv[tid+1]);
     }
-
-    for (i = 0; i < k; i++) 
-        pthread_join(t[i], NULL);
 
     printf("\n\nTotal Matches: %d\nTotal mismatches: %d\n",match,mismatch);
 
     return 0;
 }
 
-void *getFiles(void *ptr)
+void getFiles(char *path)
 {
-    int i;
-    char *path, root[FILE_PATH_SIZE], filename[FILE_PATH_SIZE], temp[FILE_PATH_SIZE];
+    int i = omp_get_thread_num();
+    char root[FILE_PATH_SIZE], filename[FILE_PATH_SIZE], temp[FILE_PATH_SIZE];
     DIR *dip;
     struct dirent *dit;
     struct queue *tq,*sq;
-    struct arg *ar;
-
-    ar = (struct arg*)ptr;
-
-    path = ar->path;
-    i = ar->i;
 
     tq = q+2*i;
     sq = q+2*i+1;
 
-    while(!isEmpty(sq))
+    while(1)
     {
-        dequeue(sq,root);
-        sprintf(filename,"%s%s",path,root);
+        if(!isEmpty(sq)) 
+        {
+            dequeue(sq,root);
+            sprintf(filename,"%s%s",path,root);
 
-        if(NULL == (dip = opendir(filename)))
-        {
-            fprintf(stderr,"Bad path");
-        }
-        else
-        {
-            while((dit = readdir(dip)) != NULL)
+            if(NULL == (dip = opendir(filename)))
             {
-                if(strcmp(dit->d_name,"..")!=0 && strcmp(dit->d_name,".")!=0)
+                fprintf(stderr,"Bad path");
+            }
+            else
+            {
+                while((dit = readdir(dip)) != NULL)
                 {
-                    sprintf(temp,"%s%s",root,dit->d_name);
-                    if(dit->d_type == DT_DIR)
-                        strcat(temp,"/");
-                    enqueue(tq,temp,dit->d_type);
+                    if(strcmp(dit->d_name,"..")!=0 && strcmp(dit->d_name,".")!=0)
+                    {
+                        sprintf(temp,"%s%s",root,dit->d_name);
+                        if(dit->d_type == DT_DIR)
+                            strcat(temp,"/");
+                        enqueue(tq,temp,dit->d_type);
+                    }
                 }
             }
-            pthread_mutex_lock(&cond_mutex);
-            fill+=1;
-            pthread_cond_signal(&cond_fill);
-            pthread_mutex_unlock(&cond_mutex);
         }
-        pthread_mutex_lock(&cond_mutex);
-        while(!isEmpty(tq))
-            pthread_cond_wait(&cond_empty, &cond_mutex);
-        pthread_mutex_unlock(&cond_mutex);
+#pragma omp barrier
+#pragma omp single
+        {
+            if(deb)
+            {
+                printf("After barrier\n");
+                printf("fin %d\n",fin);
+                for (i = 0; i < k; i++) 
+                {
+                    printf("q%d",2*i); printf("\n"); print(q[2*i]);
+                }
+                for (i = 0; i < k; i++) 
+                {
+                    printf("q%d",2*i+1); printf("\n"); print(q[2*i+1]);
+                }
+            }
+
+            compareQ(args, k);
+
+            if(deb)
+            {
+                printf("After modds\n");
+                for (i = 0; i < k; i++) 
+                {
+                    printf("q%d",2*i); printf("\n"); print(q[2*i]);
+                }
+                for (i = 0; i < k; i++) 
+                {
+                    printf("q%d",2*i+1); printf("\n"); print(q[2*i+1]);
+                }
+            }
+        }
+        int l,a = 1;
+        for (l = 0; l < k; l++)
+            a&=isEmpty(&q[2*l+1]);
+        if(a)
+            break;
     }
-    pthread_mutex_lock(&cond_mutex);
-        fin+=1;
-    pthread_mutex_unlock(&cond_mutex);
-    pthread_exit(0);
 }
 
 void compareQ(char **root, int k)
