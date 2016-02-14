@@ -1,0 +1,53 @@
+Submitted by::
+
+PRABODH AGARWAL
+2012B1A7801P
+f201801@pilani.bits-pilani.ac.in
+
+====================================================================
+Design
+====================================================================
+
+Linux filesystem is a tree.
+Hence Level order traversal has been used to traverse the filesystem.
+The filesystem is traveresed level by level, and after listing contents
+of one directory of a particular level, they are compared as required.
+Common directories are kept back fur further in-depth traversal until
+no more traversal is possible.
+
+There, always are K>=2 threads.
+In pthread model, there K+1 threads, including the main thread, whereas
+in OpenMP model, there are only K threads including the main thread.
+
+====================================================================
+Pthread Model
+====================================================================
+There are K threads, which traverse the FS per directory per level.
+The contents are kept in respective queues such that, filesystem 'i',
+pushes it's contents to queue indexed at '2*i'. The main thread,
+keeps comparing the contents of one queue against all the others.
+If a common file is found, it is compared as required in the problem
+statement. However, the common directory is pushed to a queue indexed
+at 2*i+1, the odd number corresponding to filesystems i in question.
+In fact, it is this common queue with odd index which is used by
+the worker threads to look up the next directory whose contents are
+to be listed.
+
+====================================================================
+OpenMP Model
+====================================================================
+OpenMP is based on a similar model, except for there are far less
+syncronization constructs being used than in pthreads. Intead of
+main thread as in above, being used for comparison, one of the worker
+threads takes up the task of running the comparisons as stated above.
+
+====================================================================
+Issues
+====================================================================
+* The programs run well on FS of any size but are sensitive to file
+  systems not made properly and the one having broken references
+  stop running.
+
+* SHA1 has been used for file comparison. If FS contains really huge
+  files, the program takes a decent amount of time to calculate the
+  SHA1 for the files.
