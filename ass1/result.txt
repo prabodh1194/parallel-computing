@@ -1,0 +1,264 @@
+../../kfile ./1 ./2 ./3
+Directory is absent in fs2 and present in fs3: /e/
+
+Total Matches: 9
+Total mismatches: 1
+Filesystems matching:0/3
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    2.180ms     0.000ns       0.75     2.906ms     0.000ns  getFiles
+    0.512ms     0.576ms       2.25     0.227ms     0.256ms  compareFiles
+    0.381ms     0.992ms       0.25     1.523ms     3.967ms  main
+   37.887us    37.887us      42.50     0.891us     0.891us  mbedtls_sha1_process
+   35.836us    35.836us          5     7.167us     7.167us  enqueue
+   24.821us     0.607ms       0.50    49.643us     1.213ms  compareQ
+    8.853us    64.352us       4.50     1.967us    14.300us  mbedtls_sha1
+    8.511us    46.399us      13.50     0.630us     3.437us  mbedtls_sha1_update
+    4.980us     4.980us          5     0.996us     0.996us  dequeue
+    3.805us     3.805us       7.50     0.507us     0.507us  isEmpty
+    2.786us     2.786us       4.50     0.619us     0.619us  mbedtls_zeroize
+    2.163us     8.760us       4.50     0.480us     1.946us  mbedtls_sha1_finish
+    1.915us     1.915us       4.50     0.425us     0.425us  mbedtls_sha1_init
+    1.396us     4.182us       4.50     0.310us     0.929us  mbedtls_sha1_free
+    1.036us     1.036us       0.50     2.072us     2.072us  isExists
+    0.957us     0.957us       1.50     0.637us     0.637us  createQueue
+    0.839us     0.839us       4.50     0.186us     0.186us  mbedtls_sha1_starts
+
+------------------------------------------------------------------------------------------------------------------------
+    
+../../kfile ./1 ./2 ./3 ./4
+Directory is absent in fs3 and present in fs4: /e/d/
+
+Total Matches: 23
+Total mismatches: 1
+Filesystems matching:0/4
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    4.085ms     0.000ns       0.80     5.106ms     0.000ns  getFiles
+    0.823ms     0.971ms       4.60     0.179ms     0.211ms  compareFiles
+    0.401ms     1.414ms       0.20     2.006ms     7.070ms  main
+    0.180ms     0.180ms       7.20    25.042us    25.042us  enqueue
+   95.781us    95.781us      98.40     0.973us     0.973us  mbedtls_sha1_process
+   28.014us     1.008ms       0.60    46.691us     1.680ms  compareQ
+   19.428us     0.115ms      27.60     0.704us     4.174us  mbedtls_sha1_update
+   14.855us     0.148ms       9.20     1.614us    16.100us  mbedtls_sha1
+    7.096us     7.096us       7.20     0.985us     0.985us  dequeue
+    5.952us     5.952us       9.20     0.647us     0.647us  mbedtls_zeroize
+    5.707us     5.707us         11     0.519us     0.519us  isEmpty
+    4.621us    19.790us       9.20     0.502us     2.151us  mbedtls_sha1_finish
+    2.992us     2.992us       9.20     0.325us     0.325us  mbedtls_sha1_init
+    2.905us     8.857us       9.20     0.316us     0.963us  mbedtls_sha1_free
+    1.588us     1.588us       9.20     0.172us     0.172us  mbedtls_sha1_starts
+    1.191us     1.191us       1.60     0.744us     0.744us  isExists
+    0.860us     0.860us       1.60     0.537us     0.537us  createQueue
+    
+------------------------------------------------------------------------------------------------------------------------
+
+../../kfile ./1 ./2 ./3 ./4 ./5
+Directory is absent in fs4 and present in fs5: /f/
+
+Total Matches: 46
+Total mismatches: 1
+Filesystems matching:0/5
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    7.817ms     0.000ns       0.83     9.381ms     0.000ns  getFiles
+    1.332ms     1.571ms       7.67     0.174ms     0.205ms  compareFiles
+    0.469ms     2.097ms       0.17     2.814ms    12.583ms  main
+    0.155ms     0.155ms     170.33     0.908us     0.908us  mbedtls_sha1_process
+   90.255us    90.255us       9.33     9.670us     9.670us  enqueue
+   37.676us     1.619ms       0.67    56.515us     2.428ms  compareQ
+   30.414us     0.185ms         46     0.661us     4.023us  mbedtls_sha1_update
+   26.141us     0.239ms      15.33     1.705us    15.615us  mbedtls_sha1
+    9.271us     9.271us      15.33     0.605us     0.605us  mbedtls_zeroize
+    8.489us     8.489us       9.33     0.909us     0.909us  dequeue
+    7.080us     7.080us      14.50     0.488us     0.488us  isEmpty
+    6.893us    31.183us      15.33     0.449us     2.033us  mbedtls_sha1_finish
+    5.679us     5.679us      15.33     0.370us     0.370us  mbedtls_sha1_init
+    4.045us    13.316us      15.33     0.264us     0.868us  mbedtls_sha1_free
+    2.348us     2.348us      15.33     0.153us     0.153us  mbedtls_sha1_starts
+    1.327us     1.327us       3.33     0.398us     0.398us  isExists
+    1.164us     1.164us       1.67     0.698us     0.698us  createQueue
+
+------------------------------------------------------------------------------------------------------------------------
+ 
+../../kfile ./1 ./2 ./3 ./4 ./5 ./6
+File is absent in fs5 and present in fs4: /e/d/a
+File is absent in fs6 and present in fs4: /e/d/a
+File is absent in fs5 and present in fs4: /e/d/b
+File is absent in fs6 and present in fs4: /e/d/b
+Directory is absent in fs5 and present in fs6: /f/g/
+
+Total Matches: 76
+Total mismatches: 5
+Filesystems matching:0/6
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+   14.070ms     0.000ns       0.86    16.415ms     0.000ns  getFiles
+    2.013ms     2.357ms      10.86     0.185ms     0.217ms  compareFiles
+    0.481ms     2.921ms       0.14     3.364ms    20.449ms  main
+    0.226ms     0.226ms     247.43     0.911us     0.911us  mbedtls_sha1_process
+    0.128ms     0.128ms      11.43    11.162us    11.162us  enqueue
+   95.107us    95.107us      11.43     8.321us     8.321us  dequeue
+   59.580us     2.430ms       0.71    83.412us     3.402ms  compareQ
+   43.975us     0.270ms      65.14     0.675us     4.137us  mbedtls_sha1_update
+   36.693us     0.344ms      21.71     1.690us    15.832us  mbedtls_sha1
+   13.000us    13.000us      21.71     0.599us     0.599us  mbedtls_zeroize
+    9.231us    43.494us      21.71     0.425us     2.003us  mbedtls_sha1_finish
+    7.981us     7.981us         18     0.443us     0.443us  isEmpty
+    6.084us     6.084us      21.71     0.280us     0.280us  mbedtls_sha1_init
+    5.634us    18.634us      21.71     0.259us     0.858us  mbedtls_sha1_free
+    3.610us     3.610us      21.71     0.166us     0.166us  mbedtls_sha1_starts
+    1.787us     1.787us       5.71     0.312us     0.312us  isExists
+    1.250us     1.250us       1.71     0.729us     0.729us  createQueue
+    
+===============================================================================
+OPENMP
+===============================================================================
+
+../../opkfile ./1 ./2 ./3
+Directory is absent in fs2 and present in fs3: /e/
+
+Total Matches: 9
+Total mismatches: 1
+Filesystems matching:0/3
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    1.601ms     1.601ms          2     0.800ms     0.800ms  !$omp ibarrier @opkfile.c:186
+    0.672ms     0.759ms          3     0.224ms     0.253ms  compareFiles
+    0.492ms     3.154ms          1     0.492ms     3.154ms  getFiles
+    0.270ms     1.335ms       0.33     0.811ms     4.006ms  main
+    0.185ms     0.185ms          2    92.596us    92.596us  !$omp barrier @opkfile.c:153
+   69.630us    69.630us       6.67    10.444us    10.444us  enqueue
+   53.821us    53.821us      56.67     0.950us     0.950us  mbedtls_sha1_process
+   32.577us     0.797ms       0.67    48.866us     1.196ms  compareQ
+   11.526us    65.347us         18     0.640us     3.630us  mbedtls_sha1_update
+    9.259us    87.193us          6     1.543us    14.532us  mbedtls_sha1
+    7.853us     7.853us       6.67     1.178us     1.178us  dequeue
+    5.297us     1.059ms       0.33    15.891us     3.176ms  parallel region
+    4.665us     2.404ms          2     2.332us     1.202ms  !$omp single @opkfile.c:154
+    3.989us     3.989us          6     0.665us     0.665us  mbedtls_zeroize
+    3.846us     3.160ms          1     3.846us     3.160ms  !$omp parallel @opkfile.c:76
+    3.465us     3.465us         10     0.346us     0.346us  isEmpty
+    3.119us    12.410us          6     0.520us     2.068us  mbedtls_sha1_finish
+    2.705us     2.705us          1     2.705us     2.705us  !$omp ibarrier @opkfile.c:80
+    2.232us     2.232us          6     0.372us     0.372us  mbedtls_sha1_init
+    2.085us     6.074us          6     0.347us     1.012us  mbedtls_sha1_free
+    1.530us     1.530us       0.67     2.295us     2.295us  isExists
+    1.415us     0.799ms       0.67     2.122us     1.198ms  !$omp single sblock @opkfile.c:155
+    1.161us     1.161us          6     0.193us     0.193us  mbedtls_sha1_starts
+    1.100us     1.100us          2     0.550us     0.550us  createQueue
+
+------------------------------------------------------------------------------------------------------------------------
+
+../../opkfile ./1 ./2 ./3 ./4
+Directory is absent in fs3 and present in fs4: /e/d/
+
+Total Matches: 23
+Total mismatches: 1
+Filesystems matching:0/4
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    4.889ms     4.889ms          3     1.630ms     1.630ms  !$omp ibarrier @opkfile.c:186
+    1.917ms     3.812ms       0.25     7.670ms    15.248ms  main
+    1.264ms     1.540ms       5.75     0.220ms     0.268ms  compareFiles
+    0.601ms     7.542ms          1     0.601ms     7.542ms  getFiles
+    0.319ms     0.319ms          3     0.106ms     0.106ms  !$omp barrier @opkfile.c:153
+    0.177ms     0.177ms        123     1.435us     1.435us  mbedtls_sha1_process
+   80.016us    80.016us          9     8.890us     8.890us  enqueue
+   74.047us     1.626ms       0.75    98.729us     2.169ms  compareQ
+   39.995us     0.217ms      34.50     1.159us     6.276us  mbedtls_sha1_update
+   26.489us     0.276ms      11.50     2.303us    24.032us  mbedtls_sha1
+   26.480us    26.480us          9     2.942us     2.942us  dequeue
+    9.159us    37.449us      11.50     0.796us     3.256us  mbedtls_sha1_finish
+    8.875us     8.875us      11.50     0.772us     0.772us  mbedtls_zeroize
+    6.346us    15.221us      11.50     0.552us     1.323us  mbedtls_sha1_free
+    6.133us     6.523ms          3     2.044us     2.174ms  !$omp single @opkfile.c:154
+    5.792us     7.550ms          1     5.792us     7.550ms  !$omp parallel @opkfile.c:76
+    5.707us     5.707us         18     0.317us     0.317us  isEmpty
+    5.621us     5.621us      11.50     0.489us     0.489us  mbedtls_sha1_init
+    3.335us     3.335us      11.50     0.290us     0.290us  mbedtls_sha1_starts
+    3.273us     1.891ms       0.25    13.090us     7.563ms  parallel region
+    2.416us     2.416us          1     2.416us     2.416us  !$omp ibarrier @opkfile.c:80
+    1.958us     1.628ms       0.75     2.611us     2.171ms  !$omp single sblock @opkfile.c:155
+    1.614us     1.614us          2     0.807us     0.807us  isExists
+    0.919us     0.919us          2     0.459us     0.459us  createQueue
+
+------------------------------------------------------------------------------------------------------------------------
+
+../../opkfile ./1 ./2 ./3 ./4 ./5
+Directory is absent in fs4 and present in fs5: /f/
+^C          
+***Didn't work***
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    3.723ms     3.723ms       3.60     1.034ms     1.034ms  !$omp ibarrier @opkfile.c:186
+    0.804ms     0.947ms       9.20    87.381us     0.103ms  compareFiles
+    0.360ms     2.067ms          1     0.360ms     2.067ms  getFiles
+    0.186ms     0.000ns       0.20     0.929ms     0.000ns  main
+    0.143ms     0.143ms       3.60    39.596us    39.596us  !$omp barrier @opkfile.c:153
+   93.403us    93.403us     204.40     0.457us     0.457us  mbedtls_sha1_process
+   72.424us    72.424us      11.20     6.466us     6.466us  enqueue
+   34.663us    34.663us       0.40    86.658us    86.658us  !$omp ibarrier @opkfile.c:80
+   23.836us     0.976ms       0.80    29.795us     1.220ms  compareQ
+   17.897us     0.111ms      55.20     0.324us     2.016us  mbedtls_sha1_update
+   14.577us     0.143ms      18.40     0.792us     7.750us  mbedtls_sha1
+    5.631us     5.631us      18.40     0.306us     0.306us  mbedtls_zeroize
+    5.266us     5.266us      11.20     0.470us     0.470us  dequeue
+    4.403us    19.009us      18.40     0.239us     1.033us  mbedtls_sha1_finish
+    3.311us     2.103ms          1     3.311us     2.103ms  !$omp parallel @opkfile.c:76
+    3.050us     3.050us      22.60     0.135us     0.135us  isEmpty
+    2.809us     4.653ms       3.60     0.780us     1.292ms  !$omp single @opkfile.c:154
+    2.678us     8.309us      18.40     0.145us     0.451us  mbedtls_sha1_free
+    2.648us     2.648us      18.40     0.144us     0.144us  mbedtls_sha1_init
+    1.942us     0.000ns       0.20     9.710us     0.000ns  parallel region
+    1.367us     1.367us      18.40    74.166ns    74.166ns  mbedtls_sha1_starts
+    0.962us     0.977ms       0.80     1.203us     1.221ms  !$omp single sblock @opkfile.c:155
+    0.890us     0.890us          2     0.445us     0.445us  createQueue
+    0.738us     0.738us          4     0.184us     0.184us  isExists
+
+------------------------------------------------------------------------------------------------------------------------
+
+../../opkfile ./1 ./2 ./3 ./4 ./5 ./6
+File is absent in fs5 and present in fs4: /e/d/a
+File is absent in fs6 and present in fs4: /e/d/a
+File is absent in fs5 and present in fs4: /e/d/b
+File is absent in fs6 and present in fs4: /e/d/b
+Directory is absent in fs5 and present in fs6: /f/g/
+
+Total Matches: 76
+Total mismatches: 5
+Filesystems matching:0/6
+
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+   10.891ms    10.891ms          5     2.178ms     2.178ms  !$omp ibarrier @opkfile.c:186
+    1.740ms     2.097ms      12.67     0.137ms     0.166ms  compareFiles
+    0.809ms    14.655ms          1     0.809ms    14.655ms  getFiles
+    0.727ms     0.727ms          5     0.145ms     0.145ms  !$omp barrier @opkfile.c:153
+    0.262ms     2.741ms       0.17     1.573ms    16.445ms  main
+    0.240ms     0.240ms     288.67     0.831us     0.831us  mbedtls_sha1_process
+   72.059us     2.476ms       0.17     0.432ms    14.853ms  parallel region
+   51.252us     2.163ms       0.83    61.503us     2.596ms  compareQ
+   45.637us    45.637us      13.33     3.422us     3.422us  enqueue
+   43.216us     0.283ms         76     0.568us     3.726us  mbedtls_sha1_update
+   30.804us     0.357ms      25.33     1.216us    14.101us  mbedtls_sha1
+   23.245us    23.245us          1    23.245us    23.245us  !$omp ibarrier @opkfile.c:80
+   17.275us    17.275us      25.33     0.682us     0.682us  mbedtls_zeroize
+   10.475us    10.475us      13.33     0.785us     0.785us  dequeue
+   10.245us    47.258us      25.33     0.404us     1.865us  mbedtls_sha1_finish
+    9.913us    13.068ms          5     1.982us     2.614ms  !$omp single @opkfile.c:154
+    9.065us     9.065us         40     0.227us     0.227us  isEmpty
+    6.600us    23.875us      25.33     0.260us     0.942us  mbedtls_sha1_free
+    6.308us    14.684ms          1     6.308us    14.684ms  !$omp parallel @opkfile.c:76
+    5.596us     5.596us      25.33     0.220us     0.220us  mbedtls_sha1_init
+    3.811us     2.167ms       0.83     4.573us     2.600ms  !$omp single sblock @opkfile.c:155
+    3.536us     3.536us      25.33     0.140us     0.140us  mbedtls_sha1_starts
+    1.810us     1.810us       6.67     0.271us     0.271us  isExists
+    0.666us     0.666us          2     0.333us     0.333us  createQueue

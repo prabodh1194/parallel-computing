@@ -1,0 +1,26 @@
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    3.723ms     3.723ms       3.60     1.034ms     1.034ms  !$omp ibarrier @opkfile.c:186
+    0.804ms     0.947ms       9.20    87.381us     0.103ms  compareFiles
+    0.360ms     2.067ms          1     0.360ms     2.067ms  getFiles
+    0.186ms     0.000ns       0.20     0.929ms     0.000ns  main
+    0.143ms     0.143ms       3.60    39.596us    39.596us  !$omp barrier @opkfile.c:153
+   93.403us    93.403us     204.40     0.457us     0.457us  mbedtls_sha1_process
+   72.424us    72.424us      11.20     6.466us     6.466us  enqueue
+   34.663us    34.663us       0.40    86.658us    86.658us  !$omp ibarrier @opkfile.c:80
+   23.836us     0.976ms       0.80    29.795us     1.220ms  compareQ
+   17.897us     0.111ms      55.20     0.324us     2.016us  mbedtls_sha1_update
+   14.577us     0.143ms      18.40     0.792us     7.750us  mbedtls_sha1
+    5.631us     5.631us      18.40     0.306us     0.306us  mbedtls_zeroize
+    5.266us     5.266us      11.20     0.470us     0.470us  dequeue
+    4.403us    19.009us      18.40     0.239us     1.033us  mbedtls_sha1_finish
+    3.311us     2.103ms          1     3.311us     2.103ms  !$omp parallel @opkfile.c:76
+    3.050us     3.050us      22.60     0.135us     0.135us  isEmpty
+    2.809us     4.653ms       3.60     0.780us     1.292ms  !$omp single @opkfile.c:154
+    2.678us     8.309us      18.40     0.145us     0.451us  mbedtls_sha1_free
+    2.648us     2.648us      18.40     0.144us     0.144us  mbedtls_sha1_init
+    1.942us     0.000ns       0.20     9.710us     0.000ns  parallel region
+    1.367us     1.367us      18.40    74.166ns    74.166ns  mbedtls_sha1_starts
+    0.962us     0.977ms       0.80     1.203us     1.221ms  !$omp single sblock @opkfile.c:155
+    0.890us     0.890us          2     0.445us     0.445us  createQueue
+    0.738us     0.738us          4     0.184us     0.184us  isExists

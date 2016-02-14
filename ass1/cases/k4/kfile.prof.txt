@@ -1,0 +1,19 @@
+                                    excl. time  incl. time
+*excl. time  incl. time      calls      / call      / call  name
+    4.085ms     0.000ns       0.80     5.106ms     0.000ns  getFiles
+    0.823ms     0.971ms       4.60     0.179ms     0.211ms  compareFiles
+    0.401ms     1.414ms       0.20     2.006ms     7.070ms  main
+    0.180ms     0.180ms       7.20    25.042us    25.042us  enqueue
+   95.781us    95.781us      98.40     0.973us     0.973us  mbedtls_sha1_process
+   28.014us     1.008ms       0.60    46.691us     1.680ms  compareQ
+   19.428us     0.115ms      27.60     0.704us     4.174us  mbedtls_sha1_update
+   14.855us     0.148ms       9.20     1.614us    16.100us  mbedtls_sha1
+    7.096us     7.096us       7.20     0.985us     0.985us  dequeue
+    5.952us     5.952us       9.20     0.647us     0.647us  mbedtls_zeroize
+    5.707us     5.707us         11     0.519us     0.519us  isEmpty
+    4.621us    19.790us       9.20     0.502us     2.151us  mbedtls_sha1_finish
+    2.992us     2.992us       9.20     0.325us     0.325us  mbedtls_sha1_init
+    2.905us     8.857us       9.20     0.316us     0.963us  mbedtls_sha1_free
+    1.588us     1.588us       9.20     0.172us     0.172us  mbedtls_sha1_starts
+    1.191us     1.191us       1.60     0.744us     0.744us  isExists
+    0.860us     0.860us       1.60     0.537us     0.537us  createQueue
