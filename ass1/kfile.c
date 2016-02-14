@@ -187,13 +187,12 @@ void *getFiles(void *ptr)
 
 void compareQ(char **root, int k)
 {
-    struct node *h1,*h2,*t1,*t2;
+    struct node *h1,*h2,*t2;
     int f=0,f2=0,i,j;
     char file1[FILE_PATH_SIZE],file2[FILE_PATH_SIZE];
 
     for (i = 0; i < k-1; i++) 
     {
-        t1 = NULL;
         h1 = q[2*i].front;
         while(h1!=NULL)
         {
@@ -267,7 +266,6 @@ void compareQ(char **root, int k)
                 else
                     f2=0;
             }
-            t1 = h1;
             h1 = h1->next;
             dequeue(&q[2*i],NULL);
         }
