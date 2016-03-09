@@ -30,7 +30,7 @@ void printd(news *n1)
         for(j=0;j<MAX_COL;j++)
         {
             news n = n1[i*MAX_COL+j];
-            if(n.flag==EMPTY)
+            if(n.flag==EMPTY || n.data[0]=='\0')
                 break;
             printf("Category:%s\n Time:%ld\n Location:%s\n News:%s\n Flag:%d\n\n",getCategoryName(n.cat),n.time,n.location,n.data,n.flag);
         }

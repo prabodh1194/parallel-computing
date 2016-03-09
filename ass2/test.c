@@ -10,7 +10,7 @@ news * mergeOperation(news *a, news *b)
 {
     int i,j,k,di;
     news *c,*d, *ct, *dt;
-    news *e = (news *)malloc(sizeof(news)*CAT_NUM);
+    news *e = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
     for(i=0;i<CAT_NUM;i++)
     {
         c = (a+i*MAX_COL);
@@ -21,6 +21,7 @@ news * mergeOperation(news *a, news *b)
         {
             if(c[j].flag!=EMPTY)
             {
+                c[j].flag=KEEP;
                 for(k=0;k<MAX_COL;k++)
                 {
                     if(d[k].flag!=EMPTY)
@@ -89,7 +90,38 @@ int main(int argc, const char *argv[])
         }
         n.data[j]='\0';
         n.flag = AVAILABLE;
-        dataset[n.cat*MAX_COL+index[n.cat]] = n;
+        dataset[n.cat*MAX_COL+index[n.cat]++] = n;
+    }
+
+    for (i = 0; i < CAT_NUM; i++) 
+        index[i]=0;
+    fp = fopen("news2", "r");
+    for(;;)
+    {
+        c=getc(fp);
+
+        if(c==EOF) 
+            break;
+
+        fp->_IO_read_ptr-=1;
+
+        bzero(n.location,20);
+        bzero(n.data, NEWS_LENGTH);
+        fscanf(fp, "%s", cat);
+        fscanf(fp, "%ld", &(n.time));
+        fscanf(fp, "%s", n.location);
+
+        n.cat = getCategory(cat);
+
+        for(j=0; j<NEWS_LENGTH; j++)
+        {
+            c=getc(fp);
+            if(c=='\n')
+                break;
+            n.data[j]=c;
+        }
+        n.data[j]='\0';
+        n.flag = AVAILABLE;
         dataset1[n.cat*MAX_COL+index[n.cat]++] = n;
     }
 

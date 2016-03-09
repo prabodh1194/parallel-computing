@@ -7,25 +7,25 @@
 #include "bnp.h"
 #include "helper_function.h"
 
-news ** mergeOperation(news **a, news **b)
+news * mergeOperation(news *a, news *b)
 {
     int i,j,k,di;
     news *c,*d, *ct, *dt;
-    news **e = (news **)malloc(sizeof(news *)*CAT_NUM);
+    news *e = (news *)malloc(sizeof(news )*CAT_NUM*MAX_COL);
     for(i=0;i<CAT_NUM;i++)
     {
-        c = *(a+i);
-        d = *(b+i);
-        e[i] = (news *)malloc(sizeof(news)*MAX_COL*2);
+        c = (a+i*MAX_COL);
+        d = (b+i*MAX_COL);
         di=0;
 
         for(j=0;j<MAX_COL;j++)
         {
-            if(!c[j].flag!=EMPTY)
+            if(c[j].flag!=EMPTY)
             {
+                c[j].flag==KEEP;
                 for(k=0;k<MAX_COL;k++)
                 {
-                    if(!d[k].flag!=EMPTY)
+                    if(d[k].flag!=EMPTY)
                     {
                         d[k].flag=KEEP;
                         if(strcmp(c[j].location,d[k].location)==0 && strcmp(c[j].data,d[k].data)==0)
@@ -35,16 +35,14 @@ news ** mergeOperation(news **a, news **b)
                         }
                     }
                 }
-                e[i][di++] = d[j];
+                e[i*MAX_COL+di++] = d[j];
             }
         }
-        free(d);
         for(j=0;j<MAX_COL;j++)
         {
             if(c[j].flag==KEEP)
-                e[i][di++]=c[j];
+                e[i*MAX_COL+di++]=c[j];
         }
-        free(c);
     }
     return e;
 }
@@ -116,8 +114,8 @@ int main(int argc, const char *argv[])
             printf("Recieving%d\n",i);
             MPI_Recv(buf, CAT_NUM*MAX_COL, mpi_news_type, i+pow(2,j-1), 1, MPI_COMM_WORLD, &status);
             printf("Recieved%d\n",i);
-            printd(buf);
-            //dataset = mergeOperation(dataset, buf);
+            dataset = mergeOperation(dataset, buf);
+            printd(dataset);
         }
         else
         {
