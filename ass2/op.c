@@ -117,14 +117,14 @@ int main(int argc, const char *argv[])
             dataset = mergeOperation(dataset, buf);
             printd(dataset);
         }
-        else
+        else if((i-(int)pow(2,j-1)) % (int)pow(2,j)==0)
         {
             printf("sending %d\n",i);
             //printd(dataset);
             MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, i-pow(2,j-1), 1, MPI_COMM_WORLD);
             printf("sent %d\n",i);
-            MPI_Finalize();
         }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
     MPI_Type_free(&mpi_news_type);
     MPI_Finalize();
