@@ -7,53 +7,23 @@
 #include "bnp.h"
 #include "helper_function.h"
 
-news * mergeOperation(news *a, news *b)
-{
-    int i,j,k,di;
-    news *c,*d, *ct, *dt;
-    news *e = (news *)malloc(sizeof(news )*CAT_NUM*MAX_COL);
-    for(i=0;i<CAT_NUM;i++)
-    {
-        c = (a+i*MAX_COL);
-        d = (b+i*MAX_COL);
-        di=0;
-
-        for(j=0;j<MAX_COL;j++)
-        {
-            if(c[j].flag!=EMPTY)
-            {
-                c[j].flag==KEEP;
-                for(k=0;k<MAX_COL;k++)
-                {
-                    if(d[k].flag!=EMPTY)
-                    {
-                        d[k].flag=KEEP;
-                        if(strcmp(c[j].location,d[k].location)==0 && strcmp(c[j].data,d[k].data)==0)
-                        {
-                            c[j].flag=DISCARD;
-                            break;
-                        }
-                    }
-                }
-                e[i*MAX_COL+di++] = d[j];
-            }
-        }
-        for(j=0;j<MAX_COL;j++)
-        {
-            if(c[j].flag==KEEP)
-                e[i*MAX_COL+di++]=c[j];
-        }
-    }
-    return e;
-}
-
 int main(int argc, const char *argv[])
 {
-    int i,size;
+    int i, size, world_size, reporters;
     MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &i);
-    size-=1;
+
+    if(argc!=2)
+    {
+        printf("Needed 2nd arg: number of reporters per editor\n");
+        MPI_Finalize();
+        return -1;
+    }
+
+    reporters = atoi(argv[1]);
+    world_size -= reporters;
+    size = world_size/reporters;
 
     fflush(stdout);
     int j;
@@ -61,7 +31,8 @@ int main(int argc, const char *argv[])
     FILE *fp;
     char cat[20], time[20];
     MPI_Status status;
-    int index[CAT_NUM];
+    int **index;
+    index = (int **)malloc(sizeof(int)*CAT_NUM*size);
 
     type();
 
@@ -69,7 +40,7 @@ int main(int argc, const char *argv[])
     news *buf = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
 
     for (j = 0; j < CAT_NUM; j++) 
-        index[j]=0;
+        index[i/size][j]=0;
 
     bzero(filename, 100);
     sprintf(filename,"news%d",i);
@@ -104,7 +75,7 @@ int main(int argc, const char *argv[])
         }
         n.data[j]='\0';
         n.flag = AVAILABLE;
-        dataset[n.cat*MAX_COL+index[n.cat]++] = n;
+        dataset[n.cat*MAX_COL+index[i/size][n.cat]++] = n;
     }
 
     fclose(fp);
@@ -129,14 +100,14 @@ int main(int argc, const char *argv[])
         //MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    //printf("%d %d",i, size);
-    if(i==0)
+    if(i%size==0)
     {
-        printf("Sending to editor\n");
-        MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, size, 1, MPI_COMM_WORLD);
-        printf("Sent to editor\n");
+        printf("Sending to editor%d\n",i);
+        MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, world_size+(i/size), 1, MPI_COMM_WORLD);
+        printf("Sent to editor%d\n",i);
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(&mpi_news_type);
     MPI_Finalize();
     return 0;
