@@ -53,6 +53,8 @@ int main(int argc, const char *argv[])
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &i);
+    size-=1;
+
     fflush(stdout);
     int j;
     char filename[100];
@@ -111,11 +113,11 @@ int main(int argc, const char *argv[])
     {
         if(i%(int)pow(2,j) == 0 && (i+pow(2,j-1) < size))
         {
-            printf("Recieving%d\n",i);
+            printf("Receiving%d\n",i);
             MPI_Recv(buf, CAT_NUM*MAX_COL, mpi_news_type, i+pow(2,j-1), 1, MPI_COMM_WORLD, &status);
-            printf("Recieved%d\n",i);
+            printf("Received%d\n",i);
             dataset = mergeOperation(dataset, buf);
-            printd(dataset);
+            //printd(dataset);
         }
         else if((i-(int)pow(2,j-1)) % (int)pow(2,j)==0)
         {
@@ -124,8 +126,17 @@ int main(int argc, const char *argv[])
             MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, i-pow(2,j-1), 1, MPI_COMM_WORLD);
             printf("sent %d\n",i);
         }
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);
     }
+
+    //printf("%d %d",i, size);
+    if(i==0)
+    {
+        printf("Sending to editor\n");
+        MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, size, 1, MPI_COMM_WORLD);
+        printf("Sent to editor\n");
+    }
+
     MPI_Type_free(&mpi_news_type);
     MPI_Finalize();
     return 0;
