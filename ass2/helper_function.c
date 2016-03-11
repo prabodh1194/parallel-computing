@@ -5,22 +5,22 @@
 
 int getCategory(char *a)
 {
-    if(strcmp(a, "sports")==0)
-        return sports;
-    else if(strcmp(a, "politics")==0)
-        return politics;
-    else
-        return -1;
+    if(strcmp(a, "SPORTS\0")==0) return SPORTS;
+    else if(strcmp(a, "POLITICS\0")==0) return POLITICS;
+    else if(strcmp(a, "WORLD\0")==0) return WORLD;
+    else if(strcmp(a, "SCIENCE\0")==0) return SCIENCE;
+    else if(strcmp(a, "BUSINESS\0")==0) return BUSINESS;
+    else return -1;
 }
 
 char * getCategoryName(int a)
 {
-    if(a == sports)
-        return "sports\0";
-    else if(a == politics)
-        return "politics\0";
-    else
-        return '\0';
+    if(a == SPORTS) return "SPORTS\0";
+    else if(a == POLITICS) return "POLITICS\0";
+    else if(a == WORLD) return "WORLD\0";
+    else if(a == SCIENCE) return "SCIENCE\0";
+    else if(a == BUSINESS) return "BUSINESS\0";
+    else return '\0';
 }
 
 news * mergeOperation(news *a, news *b)
@@ -38,7 +38,7 @@ news * mergeOperation(news *a, news *b)
         {
             if(c[j].flag!=EMPTY)
             {
-                c[j].flag==KEEP;
+                c[j].flag=KEEP;
                 for(k=0;k<MAX_COL;k++)
                 {
                     if(d[k].flag!=EMPTY)
@@ -51,13 +51,20 @@ news * mergeOperation(news *a, news *b)
                         }
                     }
                 }
-                e[i*MAX_COL+di++] = d[j];
             }
         }
         for(j=0;j<MAX_COL;j++)
         {
             if(c[j].flag==KEEP)
+            {
+                c[j].flag=AVAILABLE;
                 e[i*MAX_COL+di++]=c[j];
+            }
+            if(d[j].flag==AVAILABLE || d[j].flag==KEEP)
+            {
+                d[j].flag=AVAILABLE;
+                e[i*MAX_COL+di++]=d[j];
+            }
         }
     }
     return e;

@@ -26,21 +26,18 @@ int main(int argc, const char *argv[])
     size = world_size/reporters;
 
     fflush(stdout);
-    int j;
+    int items,j,time=TIME_STEP,off;
     char filename[100];
     FILE *fp;
-    char cat[20], time[20];
+    char cat[20];
     MPI_Status status;
-    int **index;
-    index = (int **)malloc(sizeof(int)*CAT_NUM*size);
+    int index[CAT_NUM];
+    news data[MAX_NEWS];
 
     type();
 
     news *dataset = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
     news *buf = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
-
-    for (j = 0; j < CAT_NUM; j++) 
-        index[i/size][j]=0;
 
     bzero(filename, 100);
     sprintf(filename,"news%d",i);
@@ -49,6 +46,7 @@ int main(int argc, const char *argv[])
     char c;
     news n;
     fp = fopen(filename, "r");
+    items = 0;
     for(;;)
     {
         c=getc(fp);
@@ -75,36 +73,55 @@ int main(int argc, const char *argv[])
         }
         n.data[j]='\0';
         n.flag = AVAILABLE;
-        dataset[n.cat*MAX_COL+index[i/size][n.cat]++] = n;
+        data[items++] = n;
     }
 
     fclose(fp);
 
-    for(j = 1; j<=ceil(log(size)/log(2)); j++)
-    {
-        if(i%(int)pow(2,j) == 0 && (i+pow(2,j-1) < size))
-        {
-            printf("Receiving%d\n",i);
-            MPI_Recv(buf, CAT_NUM*MAX_COL, mpi_news_type, i+pow(2,j-1), 1, MPI_COMM_WORLD, &status);
-            printf("Received%d\n",i);
-            dataset = mergeOperation(dataset, buf);
-            //printd(dataset);
-        }
-        else if((i-(int)pow(2,j-1)) % (int)pow(2,j)==0)
-        {
-            printf("sending %d\n",i);
-            //printd(dataset);
-            MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, i-pow(2,j-1), 1, MPI_COMM_WORLD);
-            printf("sent %d\n",i);
-        }
-        //MPI_Barrier(MPI_COMM_WORLD);
-    }
+    //done loading dataset
 
-    if(i%size==0)
+    off = 0;
+    while(off<items)
     {
-        printf("Sending to editor%d\n",i);
-        MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, world_size+(i/size), 1, MPI_COMM_WORLD);
-        printf("Sent to editor%d\n",i);
+        for (j = 0; j < CAT_NUM; j++) 
+            index[j]=0;
+
+        for(;;)
+        {
+            if(off>=items)
+                break;
+            n = data[off++];
+            if(n.time<=time)
+                dataset[n.cat*MAX_COL+index[n.cat]++]=n;
+        }
+        time+=TIME_STEP;
+
+        for(j = 1; j<=ceil(log(size)/log(2)); j++)
+        {
+            if(i%(int)pow(2,j) == 0 && (i+pow(2,j-1) < size))
+            {
+                //printf("Reporter: %d Receiving from %d\n",i,i+(int)pow(2,j-1));
+                MPI_Recv(buf, CAT_NUM*MAX_COL, mpi_news_type, i+pow(2,j-1), 1, MPI_COMM_WORLD, &status);
+                printf("Reporter: %d Received from %d\n",i,i+(int)pow(2,j-1));
+                dataset = mergeOperation(dataset, buf);
+                //printd(dataset);
+            }
+            else if((i-(int)pow(2,j-1)) % (int)pow(2,j)==0)
+            {
+                //printf("Reporter: %d Sending to %d\n",i,i-(int)pow(2,j-1));
+                //printd(dataset);
+                MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, i-pow(2,j-1), 1, MPI_COMM_WORLD);
+                printf("Reporter: %d Sent to %d\n",i,i-(int)pow(2,j-1));
+            }
+            //MPI_Barrier(MPI_COMM_WORLD);
+        }
+
+        if(i%size==0)
+        {
+            //printf("Reporter %d Sending to editor%d\n",i, world_size+(i/size));
+            MPI_Send(dataset, CAT_NUM*MAX_COL, mpi_news_type, world_size+(i/size), 1, MPI_COMM_WORLD);
+            printf("Reporter %d Sent to editor%d\n",i, world_size+(i/size));
+        }
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

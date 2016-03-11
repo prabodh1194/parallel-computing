@@ -2,7 +2,7 @@
 #define _BNP_H
 
 #include <mpi.h>
-#define CAT_NUM 2
+#define CAT_NUM 5
 #define MAX_COL 10
 #define MAX_RECV 100
 #define EMPTY 0
@@ -10,12 +10,17 @@
 #define DISCARD -1
 #define AVAILABLE 2
 #define NEWS_LENGTH 2000
+#define MAX_NEWS 100
+#define TIME_STEP 5
 
 MPI_Datatype mpi_news_type;
 
 enum category {
-    sports,
-    politics
+    SPORTS,
+    POLITICS,
+    WORLD,
+    SCIENCE,
+    BUSINESS
 };
 
 typedef struct news{
