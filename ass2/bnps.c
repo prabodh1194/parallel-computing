@@ -9,7 +9,8 @@
 
 int main(int argc, const char *argv[])
 {
-    int i,size,count; MPI_Init(NULL, NULL);
+    int i,size,count; 
+    MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &i);
     news data[MAX_NEWS];
@@ -80,6 +81,7 @@ int main(int argc, const char *argv[])
         for (j = 0; j < CAT_NUM; j++) 
             index[j]=0;
         bzero(dataset, sizeof(news)*CAT_NUM*MAX_COL);
+
         for(;;)
         {
             if(off>=items)
@@ -98,9 +100,6 @@ int main(int argc, const char *argv[])
         }
         time+=TIME_STEP;
         //printf("%d %d %d\n",items,i,off);
-
-        if(flag==0)
-            continue;
 
         for(j = 1; j<=ceil(log(size)/log(2)); j++)
         {
