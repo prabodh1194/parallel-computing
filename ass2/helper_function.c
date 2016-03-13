@@ -23,6 +23,9 @@ char * getCategoryName(int a)
     else return '\0';
 }
 
+//for a given category, news from one buffer is picked and then matched with
+//every news item os same category in second buffer over news content and
+//location of oeigin. the new merged data is returned.
 news * mergeOperation(news *a, news *b)
 {
     int i,j,k,di;

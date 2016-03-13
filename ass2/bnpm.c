@@ -1,3 +1,5 @@
+//implemented the BNPM. As of submission,
+//essentially an extension of bnps.c
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
@@ -31,15 +33,19 @@ int main(int argc, const char *argv[])
     int index[CAT_NUM];
     news data[MAX_NEWS];
 
-    reporters = atoi(argv[1]);
+    reporters = atoi(argv[1]);//number of editors
     world_size -= reporters;
-    size = world_size/reporters;
+    size = world_size/reporters;//number of reporters per editor. facing issues if size is odd
     offset = size*(i/size);
 
+    //get datatype for the struct
     type();
 
+    //current reporters dataset
     news *dataset = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
+    //incoming dataset from other reporters
     news *buf = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
+    //flag if reporter processes are alive or not
     reporterFlag = (short *)malloc(sizeof(short)*size);
 
     bzero(filename, 100);
@@ -91,6 +97,7 @@ int main(int argc, const char *argv[])
             index[j]=0;
         bzero(dataset, sizeof(news)*CAT_NUM*MAX_COL);
 
+        //read chunks of news from populated dataset
         for(;;)
         {
             if(off>=items)
@@ -108,11 +115,11 @@ int main(int argc, const char *argv[])
             }
         }
         time+=TIME_STEP;
-        //printf("%d %d %d %d\n",items,i,off,offset);
+        printf("%d %d %d %d\n",items,i,off,offset);
 
         for(j = 1; j<=ceil(log(size)/log(2)); j++)
         {
-            if(i%(int)pow(2,j) == 0 && (i+pow(2,j-1)-offset < size))
+            if((i-offset)%(int)pow(2,j) == 0 && (i+pow(2,j-1)-offset < size))
             {
                 //printf("Reporter: %d Receiving from %d\n",i,i+(int)pow(2,j-1));
                 if( reporterFlag[i+(int)pow(2,j-1)-offset] == 1)
@@ -130,7 +137,7 @@ int main(int argc, const char *argv[])
                 //printd(dataset);
                 printf("Reporter: %d Received from %d\n",i,i+(int)pow(2,j-1));
             }
-            else if((i-(int)pow(2,j-1)) % (int)pow(2,j)==0)
+            else if(((i-offset)-(int)pow(2,j-1)) % (int)pow(2,j)==0)
             {
                 //printf("Reporter: %d Sending to %d\n",i,i-(int)pow(2,j-1));
                 //printd(dataset);
@@ -149,9 +156,11 @@ int main(int argc, const char *argv[])
     }
 
     //printf("Ending%d %d\n",i,size*(i/size));
+    //ending reporter sends signal to editor
     if(i%size==0)
         MPI_Send(NULL, 0, mpi_news_type, world_size+(i/size), 1, MPI_COMM_WORLD);
     else
+        //ending reporter signals reporters who might be waiting for it
         for(j=size*(i/size);j<i;j++)
         {
             MPI_Request request;

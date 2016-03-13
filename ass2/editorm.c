@@ -1,3 +1,5 @@
+//multiple editors recieve news from their bunch of reporters and then employ
+//parallel reduction merge operation same as used in bnps
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>

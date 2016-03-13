@@ -1,3 +1,9 @@
+//implemeted bnps. respective reportes read a dataset and populate a data
+//structure. then read chunks of news using a time_step of some units --  5 in
+//this case. this step is just to emulate a reporter proding breaking news and
+//can be conviniently replaced with other streaming news mechanisms
+//parallel reduction has been employed to merge news based on equality of news
+//and origin location.
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
@@ -27,7 +33,9 @@ int main(int argc, const char *argv[])
 
     type();
 
+    //current reporter's dataset
     news *dataset = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
+    //dataset of incoming reporter
     news *buf = (news *)malloc(sizeof(news)*CAT_NUM*MAX_COL);
     reporterFlag = (short *)malloc(sizeof(short)*size);
 
@@ -138,9 +146,11 @@ int main(int argc, const char *argv[])
         //MPI_Barrier(MPI_COMM_WORLD);
     }
 
+    //notify reporter that news has ended
     if(i==0)
         MPI_Send(NULL, 0, mpi_news_type, size, 1, MPI_COMM_WORLD);
     else
+        //notify probably waiting reporters
         for(j=0;j<i;j++)
             MPI_Send(NULL, 0, mpi_news_type, j, 1, MPI_COMM_WORLD);
 
