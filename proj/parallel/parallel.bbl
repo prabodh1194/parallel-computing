@@ -1,0 +1,14 @@
+\begin{thebibliography}{1}
+
+\bibitem{dpll}
+Martin Davis, George Logemann, and Donald Loveland.
+\newblock A machine program for theorem-proving.
+\newblock {\em Commun. ACM}, 5(7):394--397, July 1962.
+
+\bibitem{foster}
+Ian Foster.
+\newblock {\em Designing and Building Parallel Programs: Concepts and Tools for
+  Parallel Software Engineering}.
+\newblock Addison-Wesley, 1995.
+
+\end{thebibliography}
