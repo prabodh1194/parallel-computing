@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
+#include <mpi.h>
+#include <omp.h>
+#include <math.h>
+
+short sat = 0;
 
 void print(int **cnf, int l, int c)
 {
@@ -15,7 +20,7 @@ void print(int **cnf, int l, int c)
     }
 }
 
-void simplify(int **cnf, int *ls, int c, int len, int x)
+void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
 {
     //print(cnf, len, c);
 
@@ -45,16 +50,29 @@ void simplify(int **cnf, int *ls, int c, int len, int x)
     ls[l] = x;
     if(flag)
     {
+        int rank;
+        char size[20];
+        sat = 1;
+        /*
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        sprintf(size, "f%d", rank);
+        FILE *fp = fopen(size,"a");
         for (i = 0; i < len; i++) 
             if(ls[i]!=-1)
             {
                 if(ls[i]%2 == 1)
-                    printf("~");
-                printf("%d ",1+(ls[i]>>1));
+                    fprintf(fp,"~");
+                fprintf(fp,"%d ",1+(ls[i]>>1));
             }
-        printf("\n");
+        fprintf(fp,"\n");
+        fclose(fp);
+        */
         return;
     }
+
+    if(flag2)
+        return;
+
     l+=1;
     int *temp;
     int **ccnf = (int **)malloc(sizeof(int *)*c);
@@ -66,8 +84,8 @@ void simplify(int **cnf, int *ls, int c, int len, int x)
     }
     memcpy(cx, ls, sizeof(int)*len);
 
-    simplify(ccnf, cx, c, len, l<<1);
-    simplify(cnf, ls, c, len, l<<1|1);
+    simplify(ccnf, cx, c, len, l<<1, 0);
+    simplify(cnf, ls, c, len, l<<1|1, 0);
 
     for(i = 0; i < c; i++)
         free(ccnf[i]);
@@ -75,16 +93,18 @@ void simplify(int **cnf, int *ls, int c, int len, int x)
     free(ccnf);
 }
 
-void getInput(int **cnf, int l, int c)
+void getInput(int **cnf, int l, int c, const char *file)
 {
     int i,j,li,li1;
     char cl[3];
+
+    FILE *fp = fopen(file, "r");
 
     for (i = 0; i < c; i++) 
     {
         for (j = 0; j < l; j++) 
         {
-            scanf("%s", cl);
+            fscanf(fp,"%s", cl);
             if(cl[0] == '!' || cl[0] == '~')
             {
                 li = atoi(cl+1)-1;
@@ -96,25 +116,33 @@ void getInput(int **cnf, int l, int c)
                 li1 = li<<1;
             }
             cnf[i][li+2] = li1;
-            if(getc(stdin) == '\n')
+            if(getc(fp) == '\n')
                 break;
             else
-                stdin->_IO_read_ptr--;
+                fp->_IO_read_ptr--;
         }
         cnf[i][0] = 0;
         cnf[i][1] = j+1;
     }
+    fclose(fp);
 }
 
 int main(int argc, const char *argv[])
 {
-    if(argc!=3)
+    fflush(stdout);
+    if(argc!=4)
     {
-        printf("Usage: ./program <literals> <clauses>");
+        printf("Usage: ./program <literals> <clauses> <i/p file name");
         return -1;
     }
 
-    int **cnf, clauses, literals, i, *x, res, j;
+    int **cnf, clauses, literals, i, *x, res, j, size, l, si, rank;
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    l = floor(log(size)/log(2));
 
     clauses = atoi(argv[2]);
     literals = atoi(argv[1]);
@@ -133,7 +161,21 @@ int main(int argc, const char *argv[])
     for(i = 0; i< literals; i++)
         x[i] = -1;
 
-    getInput(cnf, literals, clauses);
+    getInput(cnf, literals, clauses, argv[3]);
+
+    for(j = 0; j<l; j++)
+    {
+        si = 1&rank;
+
+        if(si == 0)
+            simplify(cnf, x, clauses, literals, (l-j-1)<<1|1, 1);
+        else
+            simplify(cnf, x, clauses, literals, (l-j-1)<<1, 1);
+
+        rank = rank>>1;
+    }
+
+
     int **ccnf = (int **)malloc(sizeof(int *)*clauses);
     int *cx = (int *)malloc(sizeof(int)*literals);
     for (i = 0; i < clauses; i++)
@@ -143,8 +185,10 @@ int main(int argc, const char *argv[])
     }
     memcpy(cx, x, sizeof(int)*literals);
 
-    simplify(ccnf, cx, clauses, literals, 0);
-    simplify(cnf, x, clauses, literals, 1);
+    
+
+    simplify(ccnf, cx, clauses, literals, l<<1, 0);
+    simplify(cnf, x, clauses, literals, l<<1|1, 0);
 
     for(i = 0; i < clauses; i++)
     {
@@ -157,5 +201,9 @@ int main(int argc, const char *argv[])
     free(x);
     free(cnf);
 
+    if(!sat)
+        printf("UNSATISFIABLE\n");
+
+    MPI_Finalize();
     return 0;
 }
