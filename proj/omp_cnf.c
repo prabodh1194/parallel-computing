@@ -3,8 +3,8 @@
 #include <strings.h>
 #include <string.h>
 #include <mpi.h>
-#include <math.h>
 #include <omp.h>
+#include <math.h>
 
 short sat = 0;
 FILE *fp1;
@@ -52,21 +52,16 @@ void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
     if(flag)
     {
         int rank;
-        char *out = (char *)malloc(sizeof(char)*len*3);
-
+        char size[20];
         sat = 1;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         for (i = 0; i < len; i++) 
             if(ls[i]!=-1)
             {
                 if(ls[i]%2 == 1)
-                    sprintf(out,"!");
-                sprintf(out,"%d ",1+(ls[i]>>1));
+                    fprintf(fp1,"!");
+                fprintf(fp1,"%d ",1+(ls[i]>>1));
             }
-        sprintf(out,"\n");
-#pragma omp critical
-        fprintf(fp1,"%s",out);
-        free(out);
+        fprintf(fp1,"\n");
         return;
     }
 
@@ -74,7 +69,6 @@ void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
         return;
 
     l+=1;
-
 
     int **ccnf = (int **)malloc(sizeof(int *)*c);
     int *cx = (int *)malloc(sizeof(int)*len);
@@ -190,8 +184,14 @@ int main(int argc, const char *argv[])
 
     double t1 = omp_get_wtime();
 
-    simplify(ccnf, cx, clauses, literals, l<<1, 0);
-    simplify(cnf, x, clauses, literals, l<<1|1, 0);
+#pragma omp parallel
+    {
+        i = omp_get_thread_num();
+#pragma omp task firstprivate(ccnf,cx)
+        simplify(ccnf, cx, clauses, literals, l<<1, 0);
+#pragma omp task firstprivate(cnf,x)
+        simplify(cnf, x, clauses, literals, l<<1|1, 0);
+    }
 
     double t2 = omp_get_wtime();
 
@@ -211,7 +211,7 @@ int main(int argc, const char *argv[])
     if(!sat)
         printf("UNSATISFIABLE\n");
 
-    fclose(fp1);
+        fclose(fp1);
     MPI_Finalize();
     return 0;
 }
