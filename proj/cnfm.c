@@ -8,26 +8,29 @@
 int main(void)
 {
     fflush(stdout);
-    int j,i, size,l,si;
+    int j,i, size,l;
+    MPI_Status si;
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &i);
 
-    l = floor(log(size)/log(2));
+    int *a = (int *)malloc(sizeof(int)*10);
 
-    printf("Hello %d %d\n",i,l);
+    printf("Hello %d\n",i);
 
-    for(j = 0; j<l; j++)
+    if(i == 0)
     {
-        si = 1&i;
-
-        if(si == 0)
-            printf("~%d ",l-j);
-        else
-            printf("%d ",l-j);
-
-        i = i>>1;
+        for (i = 0; i < 10; i++) 
+            a[i] = i;
+        MPI_Send(a, 10, MPI_INT, 1, 0, MPI_COMM_WORLD);
     }
+    else
+    {
+        MPI_Recv(a, 5, MPI_INT, 0, 0, MPI_COMM_WORLD, &si);
+        for (i = 0; i < 5; i++) 
+            printf("%d ",a[i]);
+    }
+    
     printf("\n");
 
     MPI_Finalize();

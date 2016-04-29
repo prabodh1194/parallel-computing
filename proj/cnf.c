@@ -51,22 +51,26 @@ void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
     ls[l] = x;
     if(flag)
     {
-        int rank;
-        char *out = (char *)malloc(sizeof(char)*len*3);
-
         sat = 1;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        char *out = NULL, *num = NULL;
+        out = (char *)malloc(sizeof(char)*len*13);
+        num = (char *)malloc(sizeof(char)*12);
+        bzero(out, sizeof(char)*len*3);
+        bzero(num, sizeof(char)*12);
+
         for (i = 0; i < len; i++) 
             if(ls[i]!=-1)
             {
                 if(ls[i]%2 == 1)
-                    sprintf(out,"!");
-                sprintf(out,"%d ",1+(ls[i]>>1));
+                    out = strcat(out,"!");
+                sprintf(num,"%d ",1+(ls[i]>>1));
+                out = strcat(out,num);
+                bzero(num, sizeof(char)*12);
             }
-        sprintf(out,"\n");
-#pragma omp critical
-        fprintf(fp1,"%s",out);
-        free(out);
+        fprintf(fp1,"%s\n",out);
+        if(out!=NULL)
+            free(out);
+        out = NULL;
         return;
     }
 
@@ -76,19 +80,30 @@ void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
     l+=1;
 
 
-    int **ccnf = (int **)malloc(sizeof(int *)*c);
-    int *cx = (int *)malloc(sizeof(int)*len);
+    int **ccnf = NULL;
+    ccnf = (int **)malloc(sizeof(int *)*c);
+    int *cx = NULL;
+    cx = (int *)malloc(sizeof(int)*len);
     for (i = 0; i < c; i++)
     {
+        ccnf[i] = NULL;
         ccnf[i] = (int *)malloc(sizeof(int)*(len+2));
         memcpy(*(ccnf+i), *(cnf+i), sizeof(int)*(len+2));
     }
     memcpy(cx, ls, sizeof(int)*len);
     simplify(ccnf, cx, c, len, l<<1, 0);
     for(i = 0; i < c; i++)
-        free(ccnf[i]);
-    free(cx);
-    free(ccnf);
+    {
+        if(ccnf[i]!=NULL)
+            free(ccnf[i]);
+        ccnf[i] = NULL;
+    }
+    if(cx!=NULL)
+        free(cx);
+    cx = NULL;
+    if(ccnf!=NULL)
+        free(ccnf);
+    ccnf = NULL;
     simplify(cnf, ls, c, len, l<<1|1, 0);
 }
 
@@ -135,7 +150,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    int **cnf, clauses, literals, i, *x, res, j, size, l, si, rank;
+    int **cnf=NULL, clauses, literals, i, *x=NULL, res, j, size, l, si, rank;
     char file[20];
 
     MPI_Init(NULL, NULL);
@@ -179,10 +194,13 @@ int main(int argc, const char *argv[])
     }
 
 
-    int **ccnf = (int **)malloc(sizeof(int *)*clauses);
-    int *cx = (int *)malloc(sizeof(int)*literals);
+    int **ccnf = NULL;
+    ccnf = (int **)malloc(sizeof(int *)*clauses);
+    int *cx = NULL;
+    cx = (int *)malloc(sizeof(int)*literals);
     for (i = 0; i < clauses; i++)
     {
+        ccnf[i] = NULL;
         ccnf[i] = (int *)malloc(sizeof(int)*(literals+2));
         memcpy(ccnf[i], cnf[i], sizeof(int)*(literals+2));
     }
@@ -195,23 +213,37 @@ int main(int argc, const char *argv[])
 
     double t2 = omp_get_wtime();
 
-    printf("%lf",(t2-t1));
+    printf("\n%lf\n",(t2-t1));
 
     for(i = 0; i < clauses; i++)
     {
-        free(ccnf[i]);
-        free(cnf[i]);
+        if(ccnf[i]!=NULL)
+            free(ccnf[i]);
+        ccnf[i] = NULL;
+        if(cnf[i]!=NULL)
+            free(cnf[i]);
+        cnf[i] = NULL;
         //free(cnf[i]);
     }
-    free(ccnf);
-    free(cx);
-    free(x);
-    free(cnf);
+    if(ccnf!=NULL)
+        free(ccnf);
+    ccnf = NULL;
+
+    if(cx!=NULL)
+        free(cx);
+    cx = NULL;
+
+    if(x!=NULL)
+        free(x);
+    x = NULL;
+
+    if(cnf!=NULL)
+        free(cnf);
+    cnf = NULL;
 
     if(!sat)
         printf("UNSATISFIABLE\n");
 
-    fclose(fp1);
     MPI_Finalize();
     return 0;
 }

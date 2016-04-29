@@ -8,6 +8,8 @@
 
 short sat = 0;
 FILE *fp1;
+int LEVEL = 0;
+int MAX_LEVEL = 0;
 
 void print(int **cnf, int l, int c)
 {
@@ -23,10 +25,10 @@ void print(int **cnf, int l, int c)
 
 void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
 {
+    //printf("%d\n",omp_get_thread_num());
     //print(cnf, len, c);
-
     int i, l, flag = 1;
-    fflush(stdout);
+    fflush(fp1);
 
     l = x>>1;
 
@@ -51,39 +53,53 @@ void simplify(int **cnf, int *ls, int c, int len, int x, int flag2)
     ls[l] = x;
     if(flag)
     {
-        int rank;
-        char size[20];
         sat = 1;
+        char *out = (char *)malloc(sizeof(char)*len*3);
+        bzero(out,sizeof(char)*len*3);
         for (i = 0; i < len; i++) 
             if(ls[i]!=-1)
             {
                 if(ls[i]%2 == 1)
-                    fprintf(fp1,"!");
-                fprintf(fp1,"%d ",1+(ls[i]>>1));
+                    sprintf(out,"%s!",out);
+                sprintf(out,"%s%d ",out,1+(ls[i]>>1));
             }
-        fprintf(fp1,"\n");
+        fprintf(fp1,"%s\n",out);
+        free(out);
         return;
     }
 
     if(flag2)
         return;
-
     l+=1;
 
-    int **ccnf = (int **)malloc(sizeof(int *)*c);
-    int *cx = (int *)malloc(sizeof(int)*len);
-    for (i = 0; i < c; i++)
-    {
-        ccnf[i] = (int *)malloc(sizeof(int)*(len+2));
-        memcpy(*(ccnf+i), *(cnf+i), sizeof(int)*(len+2));
-    }
-    memcpy(cx, ls, sizeof(int)*len);
-    simplify(ccnf, cx, c, len, l<<1, 0);
-    for(i = 0; i < c; i++)
-        free(ccnf[i]);
-    free(cx);
-    free(ccnf);
-    simplify(cnf, ls, c, len, l<<1|1, 0);
+        int **ccnf = (int **)malloc(sizeof(int *)*c);
+        int *cx = (int *)malloc(sizeof(int)*len);
+        for (i = 0; i < c; i++)
+        {
+            ccnf[i] = (int *)malloc(sizeof(int)*(len+2));
+            memcpy(*(ccnf+i), *(cnf+i), sizeof(int)*(len+2));
+        }
+        memcpy(cx, ls, sizeof(int)*len);
+        if(LEVEL<MAX_LEVEL)
+        {
+#pragma omp atomic
+            LEVEL+=1;
+#pragma omp task
+            simplify(ccnf, cx, c, len, l<<1, 0);
+#pragma omp task
+            simplify(cnf, ls, c, len, l<<1|1, 0);
+        }
+        else
+        {
+            simplify(ccnf, cx, c, len, l<<1, 0);
+            simplify(cnf, ls, c, len, l<<1|1, 0);
+        }
+#pragma omp taskwait
+        for(i = 0; i < c; i++)
+            free(ccnf[i]);
+        free(cx);
+        free(ccnf); 
+
 }
 
 void getInput(int **cnf, int l, int c, const char *file)
@@ -129,7 +145,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    int **cnf, clauses, literals, i, *x, res, j, size, l, si, rank;
+    int clauses, literals, i, res, j, size, l, si, rank;
     char file[20];
 
     MPI_Init(NULL, NULL);
@@ -138,80 +154,83 @@ int main(int argc, const char *argv[])
 
     l = floor(log(size)/log(2));
 
-        sprintf(file, "f%d", rank);
-        fp1 = fopen(file,"w");
+    sprintf(file, "f%d", rank);
+    fp1 = fopen(file,"w");
 
+    //number of clauses
     clauses = atoi(argv[2]);
+    //number of variables
     literals = atoi(argv[1]);
-    cnf = (int **)malloc(sizeof(int *)*clauses);
-    x = (int *)malloc(sizeof(int)*literals);
-
-    bzero(x, sizeof(int)*literals);
-
-    for(i = 0; i<clauses; i++)
-    {
-        cnf[i] = (int *)malloc(sizeof(int)*(literals+2));
-        for(j = 0; j<literals; j++)
-            cnf[i][j+2] = -1;
-    }
-
-    for(i = 0; i< literals; i++)
-        x[i] = -1;
-
-    getInput(cnf, literals, clauses, argv[3]);
-
-    for(j = 0; j<l; j++)
-    {
-        si = 1&rank;
-
-        if(si == 0)
-            simplify(cnf, x, clauses, literals, (l-j-1)<<1|1, 1);
-        else
-            simplify(cnf, x, clauses, literals, (l-j-1)<<1, 1);
-
-        rank = rank>>1;
-    }
-
-
-    int **ccnf = (int **)malloc(sizeof(int *)*clauses);
-    int *cx = (int *)malloc(sizeof(int)*literals);
-    for (i = 0; i < clauses; i++)
-    {
-        ccnf[i] = (int *)malloc(sizeof(int)*(literals+2));
-        memcpy(ccnf[i], cnf[i], sizeof(int)*(literals+2));
-    }
-    memcpy(cx, x, sizeof(int)*literals);
 
     double t1 = omp_get_wtime();
 
 #pragma omp parallel
     {
-        i = omp_get_thread_num();
-#pragma omp task firstprivate(ccnf,cx)
-        simplify(ccnf, cx, clauses, literals, l<<1, 0);
-#pragma omp task firstprivate(cnf,x)
-        simplify(cnf, x, clauses, literals, l<<1|1, 0);
+#pragma omp single
+        {
+            int **cnf = (int **)malloc(sizeof(int *)*clauses);
+            int *x = (int *)malloc(sizeof(int)*literals);
+
+            for(i = 0; i<clauses; i++)
+            {
+                cnf[i] = (int *)malloc(sizeof(int)*(literals+2));
+                for(j = 0; j<literals; j++)
+                    cnf[i][j+2] = -1;
+            }
+
+            for(i = 0; i< literals; i++)
+                x[i] = -1;
+
+            getInput(cnf, literals, clauses, argv[3]);
+
+            for(j = 0; j<l; j++)
+            {
+                si = 1&rank;
+
+                if(si == 0)
+                    simplify(cnf, x, clauses, literals, (l-j-1)<<1|1, 1);
+                else
+                    simplify(cnf, x, clauses, literals, (l-j-1)<<1, 1);
+
+                rank = rank>>1;
+            }
+
+
+            int **ccnf = (int **)malloc(sizeof(int *)*clauses);
+            int *cx = (int *)malloc(sizeof(int)*literals);
+            for (i = 0; i < clauses; i++)
+            {
+                ccnf[i] = (int *)malloc(sizeof(int)*(literals+2));
+                memcpy(ccnf[i], cnf[i], sizeof(int)*(literals+2));
+            }
+            memcpy(cx, x, sizeof(int)*literals);
+
+#pragma omp task
+            simplify(ccnf, cx, clauses, literals, l<<1, 0);
+#pragma omp task
+            simplify(cnf, x, clauses, literals, l<<1|1, 0);
+#pragma omp taskwait
+            for(i = 0; i < clauses; i++)
+            {
+                free(ccnf[i]);
+                free(cnf[i]);
+                //free(cnf[i]);
+            }
+            free(ccnf);
+            free(cx);
+            free(x);
+            free(cnf);     
+        }
     }
 
     double t2 = omp_get_wtime();
 
     printf("%lf",(t2-t1));
 
-    for(i = 0; i < clauses; i++)
-    {
-        free(ccnf[i]);
-        free(cnf[i]);
-        //free(cnf[i]);
-    }
-    free(ccnf);
-    free(cx);
-    free(x);
-    free(cnf);
-
     if(!sat)
         printf("UNSATISFIABLE\n");
 
-        fclose(fp1);
+    fclose(fp1);
     MPI_Finalize();
     return 0;
 }
