@@ -6,6 +6,8 @@
 #include <omp.h>
 #include <math.h>
 
+#define THREAD 4
+
 short sat = 0;
 FILE *fp1;
 int LEVEL = 0;
@@ -138,6 +140,8 @@ void getInput(int **cnf, int l, int c, const char *file)
 
 int main(int argc, const char *argv[])
 {
+    omp_set_num_threads(THREAD);
+
     fflush(stdout);
     if(argc!=4)
     {
