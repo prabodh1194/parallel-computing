@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <omp.h>
 
 FILE *fp;
 typedef int BOOL;
