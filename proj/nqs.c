@@ -99,6 +99,8 @@ int main(int argc, char **args)
     for(i=0; i<1000; i++)
         hash[i]=0;
     board= (int *)malloc(sizeof(int)*N);
+    
+    double t1 = omp_get_wtime();
 
     for(i = rank; i < N; i+=size)
     {
@@ -106,6 +108,10 @@ int main(int argc, char **args)
         NQueensD1(board, 1, N);
     }
 
+    double t2 = omp_get_wtime();
+    
+    printf("%lf\n",t2-t1);
+    
     if(board != NULL)
         free(board);
     board = NULL;
