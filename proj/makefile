@@ -1,8 +1,10 @@
-all:
+cnf:
 	mpicc -fopenmp -o cnf cnf.c -g -lm
 	mpicc -fopenmp -o omp_cnf omp_cnf.c -g -lm
-	mpicc -o nqs nqs.c -g
+nqueens:
+	mpicc -o -fopenmp nqs nqs.c -g
+	mpicc -o -fopenmp omp_nqs omp_nqs.c -g
 cnfm:
 	mpicc -fopenmp -o cnfm cnfm.c -g -lm
 clean:
-	rm -rf .fuse* cnf omp_cnf cnfm
+	rm -rf .fuse* cnf omp_cnf cnfm nqs omp_nqs

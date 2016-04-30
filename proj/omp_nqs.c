@@ -3,6 +3,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <omp.h>
+
+#define THREAD 4
 
 FILE *fp;
 typedef int BOOL;
@@ -64,7 +67,7 @@ void NQueensD1(int *board, int row, int N)
             if (stillLegal(board, row)) {
                 // make copy of current board position
                 //int *bnew = new int[N];
-                int *bnew;
+                int *bnew = NULL;
                 bnew= (int *)malloc(sizeof(int)*N);
 
                 for ( j = 0; j <= row; ++j) bnew[j] = board[j];
@@ -82,8 +85,9 @@ void NQueensD1(int *board, int row, int N)
 
 int main(int argc, char **args)
 {
+    omp_set_num_threads(THREAD);
 
-    int N, i, size, rank, *board, lo, hi, step;
+    int N, i, size, rank;
     char file[12];
 
     MPI_Init(NULL, NULL);
@@ -98,17 +102,29 @@ int main(int argc, char **args)
 
     for(i=0; i<1000; i++)
         hash[i]=0;
-    board= (int *)malloc(sizeof(int)*N);
 
-    for(i = rank; i < N; i+=size)
+#pragma omp parallel
     {
-        board[0] = i;
-        NQueensD1(board, 1, N);
-    }
+#pragma omp single
+        {
 
-    if(board != NULL)
-        free(board);
-    board = NULL;
+            for(i = rank; i < N; i+=size)
+            {
+                int *board = NULL;
+                board= (int *)malloc(sizeof(int)*N);
+#pragma omp task
+                {
+                    board[0] = i;
+                    NQueensD1(board, 1, N);
+                }
+#pragma omp taskwait
+                if(board != NULL)
+                    free(board);
+                board = NULL;
+            }
+
+        }
+    }
 
     //printf("Please check the text files generated. Each of the files generated contains a valid configuration for the board.\nIf no new file is generated, it means there is no possible valid configuration of the board\n");
 
