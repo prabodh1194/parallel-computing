@@ -103,6 +103,8 @@ int main(int argc, char **args)
     for(i=0; i<1000; i++)
         hash[i]=0;
 
+double t1 = omp_get_wtime();
+
 #pragma omp parallel
     {
 #pragma omp single
@@ -126,6 +128,9 @@ int main(int argc, char **args)
         }
     }
 
+double t2 = omp_get_wtime();
+
+printf("%lf\n",t2-t1);
     //printf("Please check the text files generated. Each of the files generated contains a valid configuration for the board.\nIf no new file is generated, it means there is no possible valid configuration of the board\n");
 
     MPI_Finalize();
